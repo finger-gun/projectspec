@@ -1,5 +1,5 @@
 <div align="right">
-  <a href="https://github.com/finger-gun/projectspec"><img src="./assets/logo.svg" alt="ProjectSpecs" width="130" /></a>
+  <a href="https://github.com/finger-gun/projectspec"><img src="./docs/assets/logo.svg" alt="ProjectSpecs" width="130" /></a>
 </div>
 
 # Contributing
