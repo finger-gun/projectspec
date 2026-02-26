@@ -11,12 +11,12 @@
     "projectspec": "pnpm --filter @projectspec/cli build && node packages/cli/dist/index.js"
   },
   "devDependencies": {
-    "@types/node": "^20.14.9",
-    "@typescript-eslint/eslint-plugin": "^7.16.0",
-    "@typescript-eslint/parser": "^7.16.0",
-    "eslint": "^8.57.0",
-    "turbo": "^2.0.9",
-    "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
+    "@types/node": "^25.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "eslint": "^10.0.2",
+    "turbo": "^2.8.11",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }

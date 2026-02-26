@@ -1,7 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import readline from "readline";
+import enquirer from "enquirer";
+
+const MultiSelect = (enquirer as unknown as { MultiSelect: new (options: object) => { run: () => Promise<string[]> } }).MultiSelect;
 import YAML from "yaml";
 import { ProjectSpecConfig } from "./config.js";
 
@@ -63,35 +65,28 @@ export async function promptForTools(): Promise<ToolId[]> {
     return [];
   }
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+  const prompt = new MultiSelect({
+    name: "tools",
+    message: "Select tools to set up",
+    hint: "Use space to toggle, enter to confirm",
+    choices: TOOL_DEFINITIONS.map((tool) => ({
+      name: tool.id,
+      message: tool.name,
+      hint: tool.description,
+    })),
   });
 
-  const options = TOOL_DEFINITIONS.map((tool, index) => {
-    return `${index + 1}) ${tool.name} - ${tool.description}`;
-  });
-
-  process.stdout.write("Select tools to set up (comma-separated numbers, Enter for none):\n");
-  process.stdout.write(options.join("\n") + "\n> ");
-
-  const answer: string = await new Promise((resolve) => {
-    rl.question("", (input) => resolve(input));
-  });
-
-  rl.close();
-
-  if (!answer.trim()) {
+  try {
+    const result = (await prompt.run()) as ToolId[];
+    return result;
+  } catch {
     return [];
   }
+}
 
-  const selections = answer
-    .split(",")
-    .map((value) => Number.parseInt(value.trim(), 10))
-    .filter((value) => Number.isFinite(value) && value > 0 && value <= TOOL_DEFINITIONS.length);
-
-  const unique = Array.from(new Set(selections));
-  return unique.map((index) => TOOL_DEFINITIONS[index - 1].id);
+export function parseTools(tools: string[]): ToolId[] {
+  const valid = new Set(TOOL_DEFINITIONS.map((tool) => tool.id));
+  return tools.filter((tool): tool is ToolId => valid.has(tool as ToolId));
 }
 
 export function installTools(tools: ToolId[], rootDir: string = process.cwd()): void {
@@ -106,6 +101,22 @@ export function installTools(tools: ToolId[], rootDir: string = process.cwd()): 
       const sourceDir = path.join(assetsRoot, asset.sourceDir);
       const targetDir = path.join(rootDir, asset.targetDir);
       copyDirectory(sourceDir, targetDir);
+    }
+  }
+}
+
+export function removeTools(tools: ToolId[], rootDir: string = process.cwd()): void {
+  for (const toolId of tools) {
+    const tool = TOOL_DEFINITIONS.find((entry) => entry.id === toolId);
+    if (!tool) {
+      continue;
+    }
+
+    for (const asset of tool.assets) {
+      const targetDir = path.join(rootDir, asset.targetDir);
+      if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+      }
     }
   }
 }

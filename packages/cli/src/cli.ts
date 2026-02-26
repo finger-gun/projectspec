@@ -1,9 +1,10 @@
 import { initProject } from "./commands/init.js";
 import { updateProject } from "./commands/update.js";
 import { verifyProject } from "./commands/verify.js";
+import { uninstallProject } from "./commands/uninstall.js";
 
 export function runCli(args: string[]): void {
-  const [command] = args;
+  const [command, ...rest] = args;
 
   if (!command) {
     printHelp();
@@ -25,6 +26,11 @@ export function runCli(args: string[]): void {
     return;
   }
 
+  if (command === "uninstall") {
+    uninstallProject(rest);
+    return;
+  }
+
   if (command?.startsWith("/ps:")) {
     process.stderr.write("/ps:* workflows are agent prompts, not CLI commands. Use an AI tool to run workflows.\n");
     process.exitCode = 1;
@@ -42,6 +48,7 @@ function printHelp(): void {
     "  projectspec init",
     "  projectspec update",
     "  projectspec verify",
+    "  projectspec uninstall",
   ];
 
   process.stdout.write(help.join("\n") + "\n");

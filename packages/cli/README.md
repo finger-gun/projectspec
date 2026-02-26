@@ -20,6 +20,7 @@ pnpm --filter @projectspec/cli build
 projectspec init
 projectspec update
 projectspec verify
+projectspec uninstall
 ```
 
 ## Command reference
@@ -35,6 +36,10 @@ Regenerates workflow artifacts based on `projectspec/config.yaml`. Creates files
 ### `projectspec verify`
 
 Runs drift checks against `projectspec/mapping/traceability.yaml` and reports missing links.
+
+### `projectspec uninstall`
+
+Removes the `projectspec/` workspace and any installed agent assets for supported tools. Use `--yes` to skip confirmation.
 
 ## Agent workflows
 
