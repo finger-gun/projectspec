@@ -1,6 +1,6 @@
 <div align="center">
 
-![ProjectSpecs](./docs/assets/logo.svg)
+<img src="./docs/assets/logo.svg" alt="ProjectSpecs" width="300" />
 
 <h4>
 
