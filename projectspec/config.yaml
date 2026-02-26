@@ -1,0 +1,10 @@
+profile: core
+workflows:
+  - /ps:intake
+  - /ps:design
+  - /ps:plan
+  - /ps:export
+  - /ps:verify
+  - /ps:archive
+integrations:
+  writeBackEnabled: false

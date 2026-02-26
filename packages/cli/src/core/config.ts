@@ -5,6 +5,7 @@ import YAML from "yaml";
 export interface ProjectSpecConfig {
   profile: string;
   workflows: string[];
+  tools: string[];
   integrations: {
     writeBackEnabled: boolean;
   };
@@ -13,6 +14,7 @@ export interface ProjectSpecConfig {
 const DEFAULT_CONFIG: ProjectSpecConfig = {
   profile: "core",
   workflows: ["/ps:intake", "/ps:design", "/ps:plan", "/ps:export", "/ps:verify", "/ps:archive"],
+  tools: [],
   integrations: {
     writeBackEnabled: false,
   },
@@ -33,6 +35,7 @@ export function readConfig(rootDir: string = process.cwd()): ProjectSpecConfig {
   return {
     profile: data.profile ?? DEFAULT_CONFIG.profile,
     workflows: data.workflows ?? DEFAULT_CONFIG.workflows,
+    tools: data.tools ?? DEFAULT_CONFIG.tools,
     integrations: {
       writeBackEnabled:
         data.integrations?.writeBackEnabled ?? DEFAULT_CONFIG.integrations.writeBackEnabled,

@@ -8,6 +8,9 @@
 - [x] 2.1 Implement `projectspec init` to create the layout and config
 - [x] 2.2 Implement `projectspec update` to regenerate skills/commands and prune disabled workflows
 - [x] 2.3 Wire workflow commands (`/ps:intake`, `/ps:design`, `/ps:plan`, `/ps:export`, `/ps:verify`, `/ps:archive`)
+- [x] 2.4 Add interactive tool selection in `init` (e.g., Copilot, KiloCode, Codex)
+- [x] 2.5 Generate agent prompts/workflows into selected tool folders
+- [x] 2.6 Update `update` to re-sync agent prompts/workflows based on config
 
 ## 3. Profiles and workflow generation
 

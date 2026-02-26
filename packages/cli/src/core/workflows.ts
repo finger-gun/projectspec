@@ -3,7 +3,6 @@ import path from "path";
 import { ProjectSpecConfig } from "./config.js";
 import { ensureProjectLayout } from "./layout.js";
 import { ensureImportStructure, recordImportActivity } from "./imports.js";
-import { runVerify } from "./verify.js";
 
 const ALL_WORKFLOWS = [
   "/ps:intake",
@@ -47,25 +46,14 @@ export function runWorkflowByName(config: ProjectSpecConfig, name: string): void
 
   ensureProjectLayout();
 
-  switch (name) {
-    case "/ps:intake":
-      ensureImportStructure("generic");
-      recordImportActivity("generic", "intake");
-      process.stdout.write("Intake workflow ready. Place raw inputs under projectspec/sources/intake/ and imports under projectspec/sources/imported/.\n");
-      return;
-    case "/ps:verify": {
-      const issues = runVerify();
-      if (issues.length > 0) {
-        process.stderr.write("Drift detected:\n" + issues.map((issue) => `- ${issue}`).join("\n") + "\n");
-        process.exitCode = 1;
-        return;
-      }
-      process.stdout.write("No drift detected.\n");
-      return;
-    }
-    default:
-      process.stdout.write(`Running workflow ${name}...\n`);
+  if (name === "/ps:intake") {
+    ensureImportStructure("generic");
+    recordImportActivity("generic", "intake");
+    process.stdout.write("Intake workflow ready. Place raw inputs under projectspec/sources/intake/ and imports under projectspec/sources/imported/.\n");
+    return;
   }
+
+  process.stdout.write(`Workflow ready: ${name}. This action is intended for agent-driven execution.\n`);
 }
 
 export function resolveEnabledWorkflows(config: ProjectSpecConfig): string[] {

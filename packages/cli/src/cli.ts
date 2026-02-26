@@ -1,15 +1,6 @@
 import { initProject } from "./commands/init.js";
 import { updateProject } from "./commands/update.js";
-import { runWorkflow } from "./commands/workflow.js";
-
-const workflowAliases = new Set([
-  "/ps:intake",
-  "/ps:design",
-  "/ps:plan",
-  "/ps:export",
-  "/ps:verify",
-  "/ps:archive",
-]);
+import { verifyProject } from "./commands/verify.js";
 
 export function runCli(args: string[]): void {
   const [command] = args;
@@ -20,7 +11,7 @@ export function runCli(args: string[]): void {
   }
 
   if (command === "init") {
-    initProject();
+    void initProject();
     return;
   }
 
@@ -29,8 +20,14 @@ export function runCli(args: string[]): void {
     return;
   }
 
-  if (workflowAliases.has(command)) {
-    runWorkflow(command);
+  if (command === "verify") {
+    verifyProject();
+    return;
+  }
+
+  if (command?.startsWith("/ps:")) {
+    process.stderr.write("/ps:* workflows are agent prompts, not CLI commands. Use an AI tool to run workflows.\n");
+    process.exitCode = 1;
     return;
   }
 
@@ -44,12 +41,7 @@ function printHelp(): void {
     "Usage:",
     "  projectspec init",
     "  projectspec update",
-    "  projectspec /ps:intake",
-    "  projectspec /ps:design",
-    "  projectspec /ps:plan",
-    "  projectspec /ps:export",
-    "  projectspec /ps:verify",
-    "  projectspec /ps:archive",
+    "  projectspec verify",
   ];
 
   process.stdout.write(help.join("\n") + "\n");
