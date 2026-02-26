@@ -1,3 +1,7 @@
+<div align="right">
+  <a href="https://github.com/finger-gun/projectspec"><img src="./assets/logo.svg" alt="ProjectSpecs" width="130" /></a>
+</div>
+
 # ProjectSpecs — Project Manifest (v0.1)
 
 ## One-liner
