@@ -13,7 +13,9 @@ context: |
   Vision: ProjectSpecs is a lightweight, AI-native project specification layer that turns enterprise requirements and architecture artifacts into structured, traceable project specs consumed by humans and AI assistants without copy/paste.
   Tech stack: Node.js (20+), TypeScript, CLI-first distribution.
   Conventions: Local-first canonical `projectspec/` folder as source of truth; profiles/workflows drive generation and pruning; stable IDs for REQ/ADR/INT/Change; read-only integrations in MVP with explicit write-back gating.
-  Style guides: Human-readable Markdown/YAML/JSON artifacts; actions over phase gates; avoid over-prescriptive structure; keep artifacts concise and testable.
+  Style guides: Human-readable Markdown/YAML/JSON artifacts; actions over phase gates; avoid over-prescriptive structure; keep artifacts concise and testable. All new code must be fully typed (no implicit any).
+  Quality gates: Every new feature must pass lint checks and unit tests.
+  Documentation: Each new spec should result in user/developer-facing documentation for the outcome (e.g., CLI usage in package README). High-level design lives in docs/ and should not duplicate OpenSpec artifacts; focus on end-user and developer guidance.
   Domain knowledge: Enterprise delivery artifacts (requirements, ADRs, integration contracts, NFRs) mapped to traceability; integrations with Jira/Confluence/GitHub Projects; drift detection between requirements and work items.
   Testability and maintainability: When feasible test coverage should be maintained at 80% or higher for all new code
 
@@ -45,5 +47,3 @@ rules:
     - Order tasks by dependency
     - Include at least one verification task per task group
     - When possible tasks should be able to be tested automatically and autonomously
-
-

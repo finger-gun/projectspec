@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.turbo/
+.pnpm-store/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+.env
+.env.*
+.DS_Store
