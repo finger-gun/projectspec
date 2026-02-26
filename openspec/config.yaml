@@ -1,0 +1,49 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+context: |
+  Vision: ProjectSpecs is a lightweight, AI-native project specification layer that turns enterprise requirements and architecture artifacts into structured, traceable project specs consumed by humans and AI assistants without copy/paste.
+  Tech stack: Node.js (20+), TypeScript, CLI-first distribution.
+  Conventions: Local-first canonical `projectspec/` folder as source of truth; profiles/workflows drive generation and pruning; stable IDs for REQ/ADR/INT/Change; read-only integrations in MVP with explicit write-back gating.
+  Style guides: Human-readable Markdown/YAML/JSON artifacts; actions over phase gates; avoid over-prescriptive structure; keep artifacts concise and testable.
+  Domain knowledge: Enterprise delivery artifacts (requirements, ADRs, integration contracts, NFRs) mapped to traceability; integrations with Jira/Confluence/GitHub Projects; drift detection between requirements and work items.
+  Testability and maintainability: When feasible test coverage should be maintained at 80% or higher for all new code
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Include an explicit Non-Goals section
+    - Keep proposals concise (under 1–2 pages)
+    - List capability names in kebab-case
+  design:
+    - Include Decisions with alternatives considered
+    - Include Risks with mitigations
+    - Focus on architecture, not line-by-line implementation
+  specs:
+    - Every requirement has at least one scenario
+    - Use SHALL/MUST for normative requirements
+    - Scenarios use #### headers with WHEN/THEN
+    - Prefer ADDED unless behavior changes require MODIFIED
+  tasks:
+    - Each task should be achievable in one session
+    - Order tasks by dependency
+    - Include at least one verification task per task group
+    - When possible tasks should be able to be tested automatically and autonomously
+
+
