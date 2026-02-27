@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("gradient-string", () => ({
-  default: () => (text: string) => text,
+  default: (): ((text: string) => string) => (text: string) => text,
 }));
 
 import { renderLogo } from "./ui.js";

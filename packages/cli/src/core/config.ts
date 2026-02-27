@@ -49,6 +49,7 @@ export function writeDefaultConfig(rootDir: string = process.cwd()): void {
     return;
   }
 
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
   const yaml = YAML.stringify(DEFAULT_CONFIG);
   fs.writeFileSync(configPath, yaml, "utf8");
 }

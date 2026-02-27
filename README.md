@@ -9,7 +9,7 @@ ProjectSpecs is a lightweight, AI-native project specification layer that turns 
 </h4>
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-![AI](https://img.shields.io/badge/AI-Enabled-6f42c1)
+![AI](https://img.shields.io/badge/AI-Friendly-6f42c1)
 [![pnpm](https://img.shields.io/badge/pnpm-workspace-orange.svg)](https://pnpm.io/)
 [![turborepo](https://img.shields.io/badge/Turbo-monorepo-0f7bff.svg)](https://turbo.build/)
 

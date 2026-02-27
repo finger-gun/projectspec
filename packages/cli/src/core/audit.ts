@@ -14,6 +14,7 @@ export function recordChangeActivity(
   rootDir: string = process.cwd(),
 ): void {
   const historyPath = path.join(rootDir, "projectspec", "changes", "audit.yaml");
+  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
   const existing = readAudit(historyPath);
   existing.push(activity);
   fs.writeFileSync(historyPath, YAML.stringify(existing), "utf8");
