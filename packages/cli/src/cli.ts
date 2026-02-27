@@ -17,7 +17,8 @@ export function runCli(args: string[]): void {
   }
 
   if (command === "update") {
-    updateProject();
+    const skipExports = rest.includes("--skip-exports");
+    updateProject({ skipExports });
     return;
   }
 

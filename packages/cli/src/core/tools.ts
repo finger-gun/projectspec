@@ -39,7 +39,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
     assets: [
       {
         sourceDir: "copilot/prompts",
-        targetDir: ".copilot/prompts",
+        targetDir: ".github/prompts",
       },
     ],
   },

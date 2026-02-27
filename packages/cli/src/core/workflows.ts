@@ -13,13 +13,90 @@ const ALL_WORKFLOWS = [
   "/ps:archive",
 ];
 
+const WORKFLOW_TEMPLATES: Record<string, string> = {
+  "/ps:intake": [
+    "# /ps:intake",
+    "",
+    "Capture raw inputs and curate requirements.",
+    "",
+    "Outputs:",
+    "- projectspec/specs/domains/<domain>/requirements.md",
+    "",
+    "Steps:",
+    "1. Read inputs from projectspec/sources/intake/ and projectspec/sources/imported/.",
+    "2. Extract requirements, assign stable IDs (REQ-<DOMAIN>-####).",
+    "3. Write requirements.md with a concise summary and requirement list.",
+  ].join("\n"),
+  "/ps:design": [
+    "# /ps:design",
+    "",
+    "Update architecture context and ADRs.",
+    "",
+    "Outputs:",
+    "- projectspec/specs/architecture/context.md",
+    "- projectspec/specs/architecture/decisions/ADR-####-<slug>.md",
+    "",
+    "Steps:",
+    "1. Review current requirements and architecture context.",
+    "2. Update context.md with key constraints and boundaries.",
+    "3. Record new decisions as ADRs with rationale and consequences.",
+  ].join("\n"),
+  "/ps:plan": [
+    "# /ps:plan",
+    "",
+    "Produce delivery plans and update traceability.",
+    "",
+    "Outputs:",
+    "- projectspec/changes/<change>/delivery.md",
+    "- projectspec/mapping/traceability.yaml",
+    "",
+    "Steps:",
+    "1. Summarize scope and milestones in delivery.md.",
+    "2. Map requirements and decisions to work items in traceability.yaml.",
+  ].join("\n"),
+  "/ps:export": [
+    "# /ps:export",
+    "",
+    "Generate tool-ready bundles without modifying canonical specs.",
+    "",
+    "Outputs:",
+    "- projectspec/exports/<target>/",
+    "",
+    "Steps:",
+    "1. Collect relevant specs, plans, and traceability data.",
+    "2. Write the bundle contents into the target directory.",
+  ].join("\n"),
+  "/ps:verify": [
+    "# /ps:verify",
+    "",
+    "Detect drift and missing traceability links.",
+    "",
+    "Checks:",
+    "- Missing links in projectspec/mapping/traceability.yaml",
+    "- IDs present in specs but missing traceability entries",
+    "- Traceability entries referencing missing IDs",
+  ].join("\n"),
+  "/ps:archive": [
+    "# /ps:archive",
+    "",
+    "Snapshot and archive completed changes.",
+    "",
+    "Outputs:",
+    "- projectspec/archive/<change>/",
+    "",
+    "Steps:",
+    "1. Copy the change delivery artifacts and related specs.",
+    "2. Include traceability.yaml in the snapshot.",
+  ].join("\n"),
+};
+
 const PROFILE_WORKFLOWS: Record<string, string[]> = {
   core: ALL_WORKFLOWS,
 };
 
-export function updateWorkflows(config: ProjectSpecConfig): void {
+export function updateWorkflows(config: ProjectSpecConfig, rootDir: string = process.cwd()): void {
   const enabled = resolveEnabledWorkflows(config);
-  const workflowsDir = path.join(process.cwd(), "projectspec", "workflows");
+  const workflowsDir = path.join(rootDir, "projectspec", "workflows");
 
   if (!fs.existsSync(workflowsDir)) {
     fs.mkdirSync(workflowsDir, { recursive: true });
@@ -28,9 +105,8 @@ export function updateWorkflows(config: ProjectSpecConfig): void {
   for (const workflow of enabled) {
     const filename = workflow.replace("/ps:", "") + ".md";
     const workflowPath = path.join(workflowsDir, filename);
-    if (!fs.existsSync(workflowPath)) {
-      fs.writeFileSync(workflowPath, "", "utf8");
-    }
+    const template = WORKFLOW_TEMPLATES[workflow] ?? "";
+    fs.writeFileSync(workflowPath, template, "utf8");
   }
 
   pruneDisabledWorkflows(workflowsDir, enabled);

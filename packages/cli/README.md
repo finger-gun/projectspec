@@ -31,7 +31,10 @@ Creates the canonical `projectspec/` folder layout and writes a default `project
 
 ### `projectspec update`
 
-Regenerates workflow artifacts based on `projectspec/config.yaml`. Creates files for enabled workflows and prunes artifacts for disabled workflows.
+Regenerates workflow artifacts based on `projectspec/config.yaml`. Creates files for enabled workflows, prunes artifacts for disabled workflows, and syncs tool bundles into harness locations.
+
+Optional flags:
+- `--skip-exports`: Skip tool bundle generation and harness sync.
 
 ### `projectspec verify`
 
@@ -43,12 +46,21 @@ Removes the `projectspec/` workspace and any installed agent assets for supporte
 
 ## Agent workflows
 
-Workflow actions like `/ps:intake`, `/ps:design`, `/ps:plan`, `/ps:export`, and `/ps:archive` are agent prompts, not CLI commands. Use them in your AI tool of choice.
+Workflow actions like `/ps:intake`, `/ps:design`, `/ps:plan`, `/ps:export`, `/ps:verify`, and `/ps:archive` are agent prompts, not CLI commands. Use them in your AI tool of choice.
+
+Expected outputs:
+
+- `/ps:intake` -> `projectspec/specs/domains/<domain>/requirements.md`
+- `/ps:design` -> `projectspec/specs/architecture/context.md` and ADRs in `projectspec/specs/architecture/decisions/`
+- `/ps:plan` -> `projectspec/changes/<change>/delivery.md` and `projectspec/mapping/traceability.yaml`
+- `/ps:export` -> `projectspec/exports/<target>/`
+- `/ps:verify` -> drift report (missing links, stale IDs)
+- `/ps:archive` -> `projectspec/archive/<change>/`
 
 ## Tool setup
 
-`projectspec init` prompts for tools and installs workflow prompts into their expected folders:
+`projectspec init` prompts for tools and installs workflow prompts into their expected folders. Tool bundles are generated under `projectspec/exports/<tool>/` and mirrored into the harness locations below.
 
 - KiloCode: `.kilocode/workflows/` and `.kilocode/skills/`
-- GitHub Copilot: `.copilot/prompts/`
+- GitHub Copilot: `.github/prompts/`
 - Codex: `.codex/skills/`

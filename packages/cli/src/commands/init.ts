@@ -1,5 +1,6 @@
 import { ensureProjectLayout } from "../core/layout.js";
 import { readConfig, writeDefaultConfig } from "../core/config.js";
+import { updateToolExports } from "../core/exports.js";
 import { updateWorkflows } from "../core/workflows.js";
 import { installTools, parseTools, persistToolsConfig, promptForTools } from "../core/tools.js";
 import { renderLogo } from "../core/ui.js";
@@ -21,5 +22,6 @@ export async function initProject(): Promise<void> {
   persistToolsConfig(config);
   updateWorkflows(config);
   installTools(parsedTools);
+  updateToolExports(config);
   process.stdout.write("Initialized ProjectSpecs workspace.\n");
 }

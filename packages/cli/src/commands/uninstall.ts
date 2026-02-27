@@ -1,8 +1,6 @@
 import fs from "fs";
 import path from "path";
 import enquirer from "enquirer";
-import { getToolDefinitions, parseTools, removeTools } from "../core/tools.js";
-import { readConfig } from "../core/config.js";
 
 interface ConfirmPrompt {
   run: () => Promise<boolean>;
@@ -22,7 +20,7 @@ export function uninstallProject(args: string[]): void {
     }
     const prompt = new (enquirer as unknown as { Confirm: new (options: object) => ConfirmPrompt }).Confirm({
       name: "confirm",
-      message: "Remove projectspec/ and installed agent assets?",
+      message: "Remove projectspec/ and ProjectSpecs agent assets?",
       initial: false,
     });
     try {
@@ -38,14 +36,7 @@ export function uninstallProject(args: string[]): void {
       return;
     }
 
-    const config = readConfig();
-    const tools = parseTools(config.tools);
-    if (tools.length === 0) {
-      const allToolIds = getToolDefinitions().map((tool) => tool.id);
-      removeTools(allToolIds);
-    } else {
-      removeTools(tools);
-    }
+    removeProjectspecAgentAssets();
 
     const projectspecDir = path.join(process.cwd(), "projectspec");
     if (fs.existsSync(projectspecDir)) {
@@ -54,4 +45,50 @@ export function uninstallProject(args: string[]): void {
 
     process.stdout.write("ProjectSpecs removed from this workspace.\n");
   });
+}
+
+function removeProjectspecAgentAssets(rootDir: string = process.cwd()): void {
+  removeProjectspecKiloCodeAssets(rootDir);
+  removeProjectspecCopilotAssets(rootDir);
+  removeProjectspecCodexAssets(rootDir);
+}
+
+function removeProjectspecKiloCodeAssets(rootDir: string): void {
+  const workflowsDir = path.join(rootDir, ".kilocode", "workflows");
+  removeMatchingFiles(workflowsDir, (name) => name.startsWith("ps-") && name.endsWith(".md"));
+  const skillDir = path.join(rootDir, ".kilocode", "skills", "projectspec-workflows");
+  removePathIfExists(skillDir);
+}
+
+function removeProjectspecCopilotAssets(rootDir: string): void {
+  const promptsDir = path.join(rootDir, ".copilot", "prompts");
+  removeMatchingFiles(promptsDir, (name) => name.startsWith("ps-") && name.endsWith(".prompt.md"));
+}
+
+function removeProjectspecCodexAssets(rootDir: string): void {
+  const skillDir = path.join(rootDir, ".codex", "skills", "projectspec-workflows");
+  removePathIfExists(skillDir);
+}
+
+function removeMatchingFiles(dirPath: string, predicate: (name: string) => boolean): void {
+  if (!fs.existsSync(dirPath)) {
+    return;
+  }
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isFile()) {
+      continue;
+    }
+    if (!predicate(entry.name)) {
+      continue;
+    }
+    fs.rmSync(path.join(dirPath, entry.name), { force: true });
+  }
+}
+
+function removePathIfExists(targetPath: string): void {
+  if (!fs.existsSync(targetPath)) {
+    return;
+  }
+  fs.rmSync(targetPath, { recursive: true, force: true });
 }

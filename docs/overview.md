@@ -22,4 +22,6 @@ ProjectSpecs is a lightweight, AI-native project specification layer that turns 
 
 This repo hosts the CLI and default workflow scaffolding for ProjectSpecs. Use the CLI to initialize a project and generate workflow artifacts.
 
+Agent-driven workflows are invoked via /ps:* prompts in your AI tool, not via the CLI. These workflows generate canonical artifacts under `projectspec/` (requirements, architecture context/ADRs, delivery plans, exports, verification reports, and archive snapshots).
+
 For user-facing commands and flags, see the CLI package README.
