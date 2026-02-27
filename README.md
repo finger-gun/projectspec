@@ -12,6 +12,7 @@ ProjectSpecs is a lightweight, AI-native project specification layer that turns 
 ![AI](https://img.shields.io/badge/AI-Friendly-6f42c1)
 [![pnpm](https://img.shields.io/badge/pnpm-workspace-orange.svg)](https://pnpm.io/)
 [![turborepo](https://img.shields.io/badge/Turbo-monorepo-0f7bff.svg)](https://turbo.build/)
+[![CI](https://github.com/finger-gun/projectspec/actions/workflows/ci.yml/badge.svg)](https://github.com/finger-gun/projectspec/actions/workflows/ci.yml)
 
 </div>
 
