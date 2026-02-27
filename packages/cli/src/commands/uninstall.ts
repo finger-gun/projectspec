@@ -71,6 +71,8 @@ function removeProjectspecCopilotAssets(rootDir: string): void {
 }
 
 function removeProjectspecCodexAssets(rootDir: string): void {
+  const promptsDir = path.join(rootDir, ".codex", "prompts");
+  removeMatchingFiles(promptsDir, (name) => name.startsWith("ps-") && name.endsWith(".prompt.md"));
   const skillDir = path.join(rootDir, ".codex", "skills", "projectspec-workflows");
   removePathIfExists(skillDir);
 }

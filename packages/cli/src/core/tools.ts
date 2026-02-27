@@ -41,6 +41,10 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
         sourceDir: "copilot/prompts",
         targetDir: ".github/prompts",
       },
+      {
+        sourceDir: "copilot/prompts",
+        targetDir: ".copilot/prompts",
+      },
     ],
   },
   {
@@ -48,6 +52,10 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
     name: "Codex",
     description: "Install skills for Codex",
     assets: [
+      {
+        sourceDir: "codex/prompts",
+        targetDir: ".codex/prompts",
+      },
       {
         sourceDir: "codex/skills",
         targetDir: ".codex/skills",
