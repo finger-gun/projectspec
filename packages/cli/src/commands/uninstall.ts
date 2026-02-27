@@ -63,6 +63,11 @@ function removeProjectspecKiloCodeAssets(rootDir: string): void {
 function removeProjectspecCopilotAssets(rootDir: string): void {
   const promptsDir = path.join(rootDir, ".copilot", "prompts");
   removeMatchingFiles(promptsDir, (name) => name.startsWith("ps-") && name.endsWith(".prompt.md"));
+  const githubPromptsDir = path.join(rootDir, ".github", "prompts");
+  removeMatchingFiles(
+    githubPromptsDir,
+    (name) => name.startsWith("ps-") && name.endsWith(".prompt.md"),
+  );
 }
 
 function removeProjectspecCodexAssets(rootDir: string): void {
