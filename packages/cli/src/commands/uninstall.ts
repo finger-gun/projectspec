@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import enquirer from "enquirer";
 
@@ -47,10 +48,15 @@ export function uninstallProject(args: string[]): void {
   });
 }
 
-function removeProjectspecAgentAssets(rootDir: string = process.cwd()): void {
+export function removeProjectspecAgentAssets(options: {
+  rootDir?: string;
+  homeDir?: string;
+} = {}): void {
+  const rootDir = options.rootDir ?? process.cwd();
+  const homeDir = options.homeDir ?? os.homedir();
   removeProjectspecKiloCodeAssets(rootDir);
   removeProjectspecCopilotAssets(rootDir);
-  removeProjectspecCodexAssets(rootDir);
+  removeProjectspecCodexAssets(rootDir, homeDir);
 }
 
 function removeProjectspecKiloCodeAssets(rootDir: string): void {
@@ -70,11 +76,20 @@ function removeProjectspecCopilotAssets(rootDir: string): void {
   );
 }
 
-function removeProjectspecCodexAssets(rootDir: string): void {
+function removeProjectspecCodexAssets(rootDir: string, homeDir: string): void {
   const promptsDir = path.join(rootDir, ".codex", "prompts");
   removeMatchingFiles(promptsDir, (name) => name.startsWith("ps-") && name.endsWith(".prompt.md"));
+  const userPromptsDir = path.join(homeDir, ".codex", "prompts");
+  removeMatchingFiles(userPromptsDir, (name) => name.startsWith("ps-") && name.endsWith(".md"));
   const skillDir = path.join(rootDir, ".codex", "skills", "projectspec-workflows");
   removePathIfExists(skillDir);
+  const skillsDir = path.join(rootDir, ".codex", "skills");
+  removeMatchingDirectories(skillsDir, new Set(["ps-intake", "ps-design", "ps-plan", "ps-export", "ps-verify", "ps-archive"]));
+  const agentsSkillsDir = path.join(rootDir, ".agents", "skills");
+  removeMatchingDirectories(
+    agentsSkillsDir,
+    new Set(["projectspec-workflows", "ps-intake", "ps-design", "ps-plan", "ps-export", "ps-verify", "ps-archive"]),
+  );
 }
 
 function removeMatchingFiles(dirPath: string, predicate: (name: string) => boolean): void {
@@ -90,6 +105,22 @@ function removeMatchingFiles(dirPath: string, predicate: (name: string) => boole
       continue;
     }
     fs.rmSync(path.join(dirPath, entry.name), { force: true });
+  }
+}
+
+function removeMatchingDirectories(dirPath: string, names: Set<string>): void {
+  if (!fs.existsSync(dirPath)) {
+    return;
+  }
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+    if (!names.has(entry.name)) {
+      continue;
+    }
+    fs.rmSync(path.join(dirPath, entry.name), { recursive: true, force: true });
   }
 }
 

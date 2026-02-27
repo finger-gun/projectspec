@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import enquirer from "enquirer";
@@ -54,11 +55,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
     assets: [
       {
         sourceDir: "codex/prompts",
+        targetDir: "~/.codex/prompts",
+      },
+      {
+        sourceDir: "codex/prompts",
         targetDir: ".codex/prompts",
       },
       {
         sourceDir: "codex/skills",
         targetDir: ".codex/skills",
+      },
+      {
+        sourceDir: "codex/skills",
+        targetDir: ".agents/skills",
       },
     ],
   },
@@ -107,7 +116,7 @@ export function installTools(tools: ToolId[], rootDir: string = process.cwd()): 
 
     for (const asset of tool.assets) {
       const sourceDir = path.join(assetsRoot, asset.sourceDir);
-      const targetDir = path.join(rootDir, asset.targetDir);
+      const targetDir = resolveTargetDir(rootDir, asset.targetDir);
       copyDirectory(sourceDir, targetDir);
     }
   }
@@ -121,12 +130,22 @@ export function removeTools(tools: ToolId[], rootDir: string = process.cwd()): v
     }
 
     for (const asset of tool.assets) {
-      const targetDir = path.join(rootDir, asset.targetDir);
+      const targetDir = resolveTargetDir(rootDir, asset.targetDir);
       if (fs.existsSync(targetDir)) {
         fs.rmSync(targetDir, { recursive: true, force: true });
       }
     }
   }
+}
+
+function resolveTargetDir(rootDir: string, targetDir: string): string {
+  if (targetDir.startsWith("~/")) {
+    return path.join(os.homedir(), targetDir.slice(2));
+  }
+  if (path.isAbsolute(targetDir)) {
+    return targetDir;
+  }
+  return path.join(rootDir, targetDir);
 }
 
 export function persistToolsConfig(config: ProjectSpecConfig, rootDir: string = process.cwd()): void {
