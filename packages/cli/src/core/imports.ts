@@ -176,7 +176,11 @@ function getRegistryPath(rootDir: string): string {
   return path.join(rootDir, "projectspec", "sources", "imported", "index.yaml");
 }
 
-function createSnapshotDirectory(source: string, timestamp: string, rootDir: string): string {
+export function createSnapshotDirectory(
+  source: string,
+  timestamp: string,
+  rootDir: string,
+): string {
   ensureImportStructure(source, rootDir);
   const snapshotDir = path.join(rootDir, "projectspec", "sources", "imported", source, timestamp);
   fs.mkdirSync(snapshotDir, { recursive: true });

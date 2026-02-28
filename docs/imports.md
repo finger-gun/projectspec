@@ -46,6 +46,18 @@ Each adapter produces:
 - `timestamp`: ISO timestamp for the snapshot
 - `metadata`: optional key/value metadata (payload path, filters, etc.)
 
+### Jira metadata keys
+
+- `jiraInstanceUrl`
+- `jiraProjectKey`
+- `jiraQuery` (optional)
+
+### Confluence metadata keys
+
+- `confluenceInstanceUrl`
+- `confluenceSpaceKey` (optional)
+- `confluencePageIds`
+
 ## Drift Signals
 
 Verification should flag:

@@ -117,4 +117,4 @@ sequenceDiagram
 - Export manifests with provenance and bundle metadata.
 - Drift verification across integrations and contracts.
 
-See `docs/imports.md` for the import pipeline and registry format.
+See `docs/imports.md` for the import pipeline and registry format, `docs/jira-import.md` for Jira snapshots, `docs/confluence-import.md` for Confluence snapshots, and `docs/intake-connectors.md` for connector-driven intake.
