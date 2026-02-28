@@ -20,6 +20,7 @@ const REQUIRED_DIRECTORIES = [
 const REQUIRED_FILES = [
   "projectspec/specs/architecture/context.md",
   "projectspec/mapping/traceability.yaml",
+  "projectspec/workflows/intake-wizard.yaml",
 ];
 
 export function ensureProjectLayout(rootDir: string = process.cwd()): void {
@@ -33,7 +34,27 @@ export function ensureProjectLayout(rootDir: string = process.cwd()): void {
   for (const file of REQUIRED_FILES) {
     const fullPath = path.join(rootDir, file);
     if (!fs.existsSync(fullPath)) {
-      fs.writeFileSync(fullPath, "", "utf8");
+      const content = file.endsWith("intake-wizard.yaml")
+        ? defaultIntakeWizardConfig()
+        : "";
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, content, "utf8");
     }
   }
+}
+
+function defaultIntakeWizardConfig(): string {
+  return [
+    "version: 1",
+    "questions:",
+    "  - id: primary_scope",
+    "    prompt: Describe the feature/change request, or provide a primary Jira key/Confluence URL/file path.",
+    "  - id: dependencies",
+    "    prompt: Describe dependencies or provide additional Jira keys/URLs/files.",
+    "  - id: constraints",
+    "    prompt: Note any constraints or NFRs (security, performance, compliance).",
+    "notes:",
+    "  treat_first_input_as_primary: true",
+    "",
+  ].join("\n");
 }

@@ -43,7 +43,8 @@ CONFLUENCE_PAGE_IDS=123,456
 CONFLUENCE_SPACE_KEY=ABC
 ```
 
-If `CONFLUENCE_PAGE_IDS` is omitted, provide page URLs in /ps-intake inputs.
+If you pass Confluence URLs to /ps-intake, the adapter infers the base URL and `CONFLUENCE_API_URL` becomes optional.
+If `CONFLUENCE_USER` is omitted, the adapter uses Bearer auth with `CONFLUENCE_PAT`.
 
 ## Connector runner
 

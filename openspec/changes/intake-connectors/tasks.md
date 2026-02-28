@@ -2,6 +2,7 @@
 
 - [x] 1.1 Define parser for /ps-intake arguments (Jira keys, Confluence URLs, file paths)
 - [x] 1.2 Add tests for argument classification
+- [x] 1.3 Add default intake wizard config file and ensure layout creates it
 
 ## 2. Connector Fetchers
 
@@ -20,3 +21,4 @@
 - [x] 4.1 Update /ps-intake prompts to accept connector inputs
 - [x] 4.2 Document connector usage and examples in docs
 - [x] 4.3 Run lint, test, and coverage gates
+- [x] 4.4 Add intake wizard skill files for harnesses

@@ -13,7 +13,7 @@ Connector runner (build first if needed):
 - `pnpm --filter @projectspec/cli build`
 - `node packages/cli/dist/scripts/intake-connectors.js <inputs...>`
 
-Required inputs (ask if missing): domain, sources.
+Required inputs (ask if missing): domain, primary scope or primary source, dependencies.
 
 Read:
 - `projectspec/sources/intake/`
@@ -43,3 +43,13 @@ Output template:
 ## Sources
 
 - <source list>
+Assumptions:
+- If inputs are provided inline, treat the first source as the primary scope and the rest as dependencies.
+- If scope is unclear, ask follow-up questions before writing requirements.
+- Use `projectspec/workflows/intake-wizard.yaml` for wizard questions.
+
+Wizard (when no inputs are provided):
+1) Load questions from `projectspec/workflows/intake-wizard.yaml`.
+2) Ask for primary scope description or a single Jira/Confluence/file source.
+3) Ask for dependencies/related systems (IDs/URLs/files).
+4) Ask for constraints/NFRs if still unclear.

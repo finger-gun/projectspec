@@ -52,4 +52,36 @@ describe("confluence adapter", () => {
     expect(registry.sources.confluence.metadata?.confluencePageIds).toBe("123");
     fs.rmSync(rootDir, { recursive: true, force: true });
   });
+
+  it("uses bearer auth when user email is missing", async () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "projectspec-confluence-"));
+    const fetchFn = vi.fn(async (_input, init) => {
+      const auth = init?.headers && "Authorization" in init.headers
+        ? String((init.headers as Record<string, string>).Authorization)
+        : "";
+      expect(auth).toBe("Bearer token");
+      return new Response(
+        JSON.stringify({
+          id: "321",
+          title: "Page B",
+          body: { storage: { value: "<p>Body</p>" } },
+          version: { when: "2024-01-02" },
+          _links: { webui: "/wiki/spaces/ABC/pages/321" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+
+    await runConfluenceImport(
+      {
+        instanceUrl: "https://confluence.example.com",
+        pat: "token",
+        pageIds: ["321"],
+        fetchFn,
+      },
+      rootDir,
+    );
+
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  });
 });

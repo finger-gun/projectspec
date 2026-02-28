@@ -1,0 +1,10 @@
+version: 1
+questions:
+  - id: primary_scope
+    prompt: Describe the feature/change request, or provide a primary Jira key/Confluence URL/file path.
+  - id: dependencies
+    prompt: Describe dependencies or provide additional Jira keys/URLs/files.
+  - id: constraints
+    prompt: Note any constraints or NFRs (security, performance, compliance).
+notes:
+  treat_first_input_as_primary: true

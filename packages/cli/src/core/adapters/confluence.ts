@@ -85,7 +85,8 @@ interface ResolvedConfluenceOptions {
 }
 
 function resolveConfluenceOptions(options: ConfluenceImportOptions): ResolvedConfluenceOptions {
-  const instanceUrl = options.instanceUrl ?? process.env.CONFLUENCE_API_URL ?? "";
+  const inferredInstance = inferInstanceUrl(options.urls);
+  const instanceUrl = options.instanceUrl ?? process.env.CONFLUENCE_API_URL ?? inferredInstance ?? "";
   const userEmail = options.userEmail ?? process.env.CONFLUENCE_USER ?? "";
   const pat = options.pat ?? process.env.CONFLUENCE_PAT ?? process.env.JIRA_PAT ?? "";
   const spaceKey = options.spaceKey ?? process.env.CONFLUENCE_SPACE_KEY;
@@ -94,8 +95,8 @@ function resolveConfluenceOptions(options: ConfluenceImportOptions): ResolvedCon
     : [];
   const pageIds = collectPageIds(options.pageIds, options.urls, pageIdsFromEnv);
   const fetchFn = options.fetchFn ?? fetch;
-  if (!instanceUrl || !userEmail || !pat) {
-    throw new Error("Confluence import requires instanceUrl, userEmail, and PAT.");
+  if (!instanceUrl || !pat) {
+    throw new Error("Confluence import requires instanceUrl and PAT.");
   }
   if (pageIds.length === 0) {
     throw new Error("Confluence import requires at least one page id or URL.");
@@ -117,12 +118,12 @@ async function fetchConfluencePages(
   for (const pageId of options.pageIds) {
     const url = new URL(`/wiki/rest/api/content/${pageId}`, options.instanceUrl);
     url.searchParams.set("expand", "body.storage,version,space");
-    const response = await options.fetchFn(url.toString(), {
-      headers: {
-        Authorization: buildBasicAuth(options.userEmail, options.pat),
-        Accept: "application/json",
-      },
-    });
+  const response = await options.fetchFn(url.toString(), {
+    headers: {
+      Authorization: buildConfluenceAuth(options.userEmail, options.pat),
+      Accept: "application/json",
+    },
+  });
     if (!response.ok) {
       throw new Error(`Confluence import failed: ${response.status} ${response.statusText}`);
     }
@@ -188,9 +189,27 @@ function extractPageId(value: string): string | null {
   }
 }
 
-function buildBasicAuth(userEmail: string, pat: string): string {
-  const token = Buffer.from(`${userEmail}:${pat}`).toString("base64");
-  return `Basic ${token}`;
+function inferInstanceUrl(urls?: string[]): string | null {
+  if (!urls || urls.length === 0) {
+    return null;
+  }
+  for (const value of urls) {
+    try {
+      const url = new URL(value);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function buildConfluenceAuth(userEmail: string, pat: string): string {
+  if (userEmail) {
+    const token = Buffer.from(`${userEmail}:${pat}`).toString("base64");
+    return `Basic ${token}`;
+  }
+  return `Bearer ${pat}`;
 }
 
 interface ConfluencePageResponse {

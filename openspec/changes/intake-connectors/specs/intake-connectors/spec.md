@@ -32,3 +32,10 @@ The system SHALL prefer connector snapshots and registry metadata when curating 
 #### Scenario: Intake prioritizes snapshots
 - **WHEN** snapshots exist for Jira or Confluence
 - **THEN** /ps-intake uses the snapshots as primary input
+
+### Requirement: Configurable intake wizard
+The system SHALL load intake wizard questions from `projectspec/workflows/intake-wizard.yaml` when /ps-intake runs without inputs.
+
+#### Scenario: Wizard questions loaded
+- **WHEN** a user runs `/ps-intake` with no inputs
+- **THEN** the wizard prompts are loaded from the config file and asked in order
