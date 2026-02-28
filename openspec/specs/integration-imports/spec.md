@@ -11,6 +11,14 @@ The system SHALL maintain an import registry at `projectspec/sources/imported/in
 - **WHEN** a new import snapshot is produced for source `jira`
 - **THEN** the registry contains an entry for `jira` with snapshot path and timestamp
 
+#### Scenario: Jira provenance captured
+- **WHEN** a Jira snapshot is registered
+- **THEN** the registry includes instance URL, project key, and query metadata
+
+#### Scenario: Confluence provenance captured
+- **WHEN** a Confluence snapshot is registered
+- **THEN** the registry includes instance URL, space key, and page IDs metadata
+
 ### Requirement: Import adapter contract
 The system SHALL define a minimal adapter contract that produces a snapshot path and registry entry for a given source.
 
