@@ -9,6 +9,7 @@ Required inputs (ask if missing):
 Read:
 - `projectspec/sources/intake/`
 - `projectspec/sources/imported/`
+- `projectspec/sources/imported/index.yaml`
 - Existing `projectspec/specs/domains/<domain>/requirements.md` (if present)
 
 Write:

@@ -24,8 +24,9 @@ const WORKFLOW_TEMPLATES: Record<string, string> = {
     "",
     "Steps:",
     "1. Read inputs from projectspec/sources/intake/ and projectspec/sources/imported/.",
-    "2. Extract requirements, assign stable IDs (REQ-<DOMAIN>-####).",
-    "3. Write requirements.md with a concise summary and requirement list.",
+    "2. Review projectspec/sources/imported/index.yaml for available snapshots.",
+    "3. Extract requirements, assign stable IDs (REQ-<DOMAIN>-####).",
+    "4. Write requirements.md with a concise summary and requirement list.",
   ].join("\n"),
   "/ps:design": [
     "# /ps:design",
@@ -124,7 +125,7 @@ export function runWorkflowByName(config: ProjectSpecConfig, name: string): void
 
   if (name === "/ps:intake") {
     ensureImportStructure("generic");
-    recordImportActivity("generic", "intake");
+    recordImportActivity("generic", "intake", new Date().toISOString());
     process.stdout.write("Intake workflow ready. Place raw inputs under projectspec/sources/intake/ and imports under projectspec/sources/imported/.\n");
     return;
   }

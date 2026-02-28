@@ -40,6 +40,7 @@ export function writeTraceability(
   rootDir: string = process.cwd(),
 ): void {
   const tracePath = path.join(rootDir, "projectspec", "mapping", "traceability.yaml");
+  fs.mkdirSync(path.dirname(tracePath), { recursive: true });
   const yaml = YAML.stringify(map);
   fs.writeFileSync(tracePath, yaml, "utf8");
 }
