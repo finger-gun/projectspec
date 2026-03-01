@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { runConfluenceImport } from "../adapters/confluence.js";
 import { runJiraImport } from "../adapters/jira.js";
+import { ensureProjectLayout } from "../layout.js";
 import { classifyIntakeInputs } from "./inputs.js";
 
 export interface IntakeConnectorResult {
@@ -22,6 +23,7 @@ export async function runIntakeConnectors(
   options: IntakeConnectorOptions = {},
 ): Promise<IntakeConnectorResult> {
   const rootDir = options.rootDir ?? process.cwd();
+  ensureProjectLayout(rootDir);
   const classification = classifyIntakeInputs(inputs, { cwd: rootDir });
   const jiraSnapshots: string[] = [];
   const confluenceSnapshots: string[] = [];

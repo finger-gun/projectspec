@@ -90,6 +90,7 @@ describe("jira adapter", () => {
 
     expect(fetchFn).toHaveBeenCalled();
     const callUrl = new URL(String(fetchFn.mock.calls[0]?.[0]));
+    expect(callUrl.pathname).toContain("/rest/api/3/search/jql");
     expect(callUrl.searchParams.get("jql")).toContain("key in (PROJ-2)");
     const snapshotPath = path.join(result.snapshotPath, "jira.json");
     const snapshot = JSON.parse(fs.readFileSync(snapshotPath, "utf8")) as {
@@ -97,5 +98,37 @@ describe("jira adapter", () => {
     };
     expect(snapshot.stories[0].key).toBe("PROJ-2");
     fs.rmSync(rootDir, { recursive: true, force: true });
+  });
+
+  it("uses home config when env is missing", async () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "projectspec-jira-"));
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "projectspec-home-"));
+    fs.mkdirSync(path.join(rootDir, "projectspec"), { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDir, "projectspec", "config.yaml"),
+      "projectId: test-project\nprofile: core\nworkflows: []\ntools: []\nintegrations:\n  writeBackEnabled: false\n",
+      "utf8",
+    );
+    fs.mkdirSync(path.join(homeDir, ".projectspec"), { recursive: true });
+    fs.writeFileSync(
+      path.join(homeDir, ".projectspec", "config.yaml"),
+      "version: 1\nprojects:\n  test-project:\n    connectors:\n      jira:\n        JIRA_API_URL: https://jira.example.com\n        JIRA_OAUTH_TOKEN: token\n        JIRA_PROJECT_KEY: PROJ\n",
+      "utf8",
+    );
+
+    const fetchFn = vi.fn(async () =>
+      new Response(
+        JSON.stringify({ total: 0, maxResults: 50, issues: [] }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const originalHome = process.env.PROJECTSPEC_HOME;
+    process.env.PROJECTSPEC_HOME = homeDir;
+    const result = await runJiraImport({ fetchFn }, rootDir);
+    expect(result.snapshotPath).toContain("jira");
+    process.env.PROJECTSPEC_HOME = originalHome;
+    fs.rmSync(rootDir, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
   });
 });

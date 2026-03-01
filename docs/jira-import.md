@@ -52,24 +52,28 @@ The import registry entry for Jira includes:
 ## Connector runner
 
 ```bash
-pnpm --filter @projectspec/cli build
 node packages/cli/dist/scripts/intake-connectors.js ROSSCRISP-2712
 ```
 
 ## Environment configuration
 
-Set these variables before running the adapter:
+Set these variables before running the adapter (PAT or OAuth token):
 
 ```bash
 JIRA_PAT=ATATT3xFfG...
+JIRA_OAUTH_TOKEN=eyJhbGci...
 JIRA_API_URL=https://your-domain.atlassian.net
 JIRA_USER=you@example.com
 JIRA_PROJECT_KEY=PROJ
 JIRA_QUERY="project = PROJ AND issuetype in (Epic, Story)"
 ```
 
+Home config (stored at `~/.projectspec/config.yaml`) can also supply these values after `projectspec init`.
+
 `JIRA_QUERY` is optional. If omitted, the adapter defaults to:
 
 ```
 project = <JIRA_PROJECT_KEY> AND issuetype in (Epic, Story)
 ```
+
+If `JIRA_OAUTH_TOKEN` is set, it is used as a Bearer token and user email + PAT are optional.

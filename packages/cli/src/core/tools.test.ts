@@ -2,6 +2,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { afterEach, describe, expect, it } from "vitest";
+import { ProjectSpecConfig } from "./config.js";
+import { updateToolExports } from "./exports.js";
 import { installTools, removeTools, parseTools } from "./tools.js";
 
 describe("tools", () => {
@@ -18,6 +20,18 @@ describe("tools", () => {
   });
 
   it("installs and removes copilot prompts", () => {
+    const workflowsDir = path.join(rootDir, "projectspec", "workflows");
+    fs.mkdirSync(workflowsDir, { recursive: true });
+    fs.writeFileSync(path.join(workflowsDir, "intake.md"), "# /ps:intake\n\nTest.\n", "utf8");
+    const config: ProjectSpecConfig = {
+      profile: "core",
+      workflows: ["/ps:intake"],
+      tools: ["github-copilot"],
+      integrations: {
+        writeBackEnabled: false,
+      },
+    };
+    updateToolExports(config, rootDir);
     installTools(["github-copilot"], rootDir);
     const promptPath = path.join(rootDir, ".github", "prompts", "ps-intake.prompt.md");
     expect(fs.existsSync(promptPath)).toBe(true);

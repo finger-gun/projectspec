@@ -1,7 +1,6 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { fileURLToPath } from "url";
 import enquirer from "enquirer";
 
 const MultiSelect = (enquirer as unknown as { MultiSelect: new (options: object) => { run: () => Promise<string[]> } }).MultiSelect;
@@ -24,11 +23,11 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Install workflows and skills for KiloCode",
     assets: [
       {
-        sourceDir: "kilocode/workflows",
+        sourceDir: "projectspec/exports/kilocode/workflows",
         targetDir: ".kilocode/workflows",
       },
       {
-        sourceDir: "kilocode/skills",
+        sourceDir: "projectspec/exports/kilocode/skills",
         targetDir: ".kilocode/skills",
       },
     ],
@@ -39,11 +38,11 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Install prompt files for Copilot",
     assets: [
       {
-        sourceDir: "copilot/prompts",
+        sourceDir: "projectspec/exports/github-copilot/prompts",
         targetDir: ".github/prompts",
       },
       {
-        sourceDir: "copilot/prompts",
+        sourceDir: "projectspec/exports/github-copilot/prompts",
         targetDir: ".copilot/prompts",
       },
     ],
@@ -51,22 +50,22 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     id: "codex",
     name: "Codex",
-    description: "Install skills for Codex",
+    description: "Install skills and prompts for Codex",
     assets: [
       {
-        sourceDir: "codex/prompts",
+        sourceDir: "projectspec/exports/codex/prompts",
         targetDir: "~/.codex/prompts",
       },
       {
-        sourceDir: "codex/prompts",
+        sourceDir: "projectspec/exports/codex/prompts",
         targetDir: ".codex/prompts",
       },
       {
-        sourceDir: "codex/skills",
+        sourceDir: "projectspec/exports/codex/skills",
         targetDir: ".codex/skills",
       },
       {
-        sourceDir: "codex/skills",
+        sourceDir: "projectspec/exports/codex/skills",
         targetDir: ".agents/skills",
       },
     ],
@@ -107,7 +106,6 @@ export function parseTools(tools: string[]): ToolId[] {
 }
 
 export function installTools(tools: ToolId[], rootDir: string = process.cwd()): void {
-  const assetsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../assets");
   for (const toolId of tools) {
     const tool = TOOL_DEFINITIONS.find((entry) => entry.id === toolId);
     if (!tool) {
@@ -115,7 +113,7 @@ export function installTools(tools: ToolId[], rootDir: string = process.cwd()): 
     }
 
     for (const asset of tool.assets) {
-      const sourceDir = path.join(assetsRoot, asset.sourceDir);
+      const sourceDir = path.join(rootDir, asset.sourceDir);
       const targetDir = resolveTargetDir(rootDir, asset.targetDir);
       copyDirectory(sourceDir, targetDir);
     }

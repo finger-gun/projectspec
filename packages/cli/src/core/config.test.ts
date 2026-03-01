@@ -2,7 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { readConfig, writeDefaultConfig } from "./config.js";
+import { ensureProjectId, readConfig, writeDefaultConfig } from "./config.js";
 
 describe("config", () => {
   it("returns defaults when config is missing", () => {
@@ -20,6 +20,14 @@ describe("config", () => {
     writeDefaultConfig(rootDir);
     const configPath = path.join(rootDir, "projectspec", "config.yaml");
     expect(fs.existsSync(configPath)).toBe(true);
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  });
+
+  it("generates and persists a projectId", () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "projectspec-config-"));
+    const projectId = ensureProjectId(rootDir);
+    const config = readConfig(rootDir);
+    expect(config.projectId).toBe(projectId);
     fs.rmSync(rootDir, { recursive: true, force: true });
   });
 

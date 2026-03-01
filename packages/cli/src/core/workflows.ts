@@ -31,9 +31,9 @@ const WORKFLOW_TEMPLATES: Record<string, string> = {
     "6. Extract requirements, assign stable IDs (REQ-<DOMAIN>-####).",
     "7. Prefer snapshots under projectspec/sources/imported/jira/ and confluence/ when available.",
     "8. Write requirements.md with a concise summary and requirement list.",
+    "9. If env vars are missing, use connector settings from ~/.projectspec/config.yaml.",
     "",
     "Connector runner:",
-    "- pnpm --filter @projectspec/cli build",
     "- node packages/cli/dist/scripts/intake-connectors.js <inputs...>",
   ].join("\n"),
   "/ps:design": [
@@ -153,6 +153,7 @@ function pruneDisabledWorkflows(workflowsDir: string, enabled: string[]): void {
   }
 
   const keep = new Set(enabled.map((workflow) => workflow.replace("/ps:", "") + ".md"));
+  keep.add("intake-wizard.yaml");
   const entries = fs.readdirSync(workflowsDir);
   for (const entry of entries) {
     if (!keep.has(entry)) {

@@ -64,6 +64,8 @@ function removeProjectspecKiloCodeAssets(rootDir: string): void {
   removeMatchingFiles(workflowsDir, (name) => name.startsWith("ps-") && name.endsWith(".md"));
   const skillDir = path.join(rootDir, ".kilocode", "skills", "projectspec-workflows");
   removePathIfExists(skillDir);
+  const intakeWizardSkillDir = path.join(rootDir, ".kilocode", "skills", "ps-intake-wizard");
+  removePathIfExists(intakeWizardSkillDir);
 }
 
 function removeProjectspecCopilotAssets(rootDir: string): void {
@@ -83,12 +85,23 @@ function removeProjectspecCodexAssets(rootDir: string, homeDir: string): void {
   removeMatchingFiles(userPromptsDir, (name) => name.startsWith("ps-") && name.endsWith(".md"));
   const skillDir = path.join(rootDir, ".codex", "skills", "projectspec-workflows");
   removePathIfExists(skillDir);
+  const intakeWizardSkillDir = path.join(rootDir, ".codex", "skills", "ps-intake-wizard");
+  removePathIfExists(intakeWizardSkillDir);
   const skillsDir = path.join(rootDir, ".codex", "skills");
   removeMatchingDirectories(skillsDir, new Set(["ps-intake", "ps-design", "ps-plan", "ps-export", "ps-verify", "ps-archive"]));
   const agentsSkillsDir = path.join(rootDir, ".agents", "skills");
   removeMatchingDirectories(
     agentsSkillsDir,
-    new Set(["projectspec-workflows", "ps-intake", "ps-design", "ps-plan", "ps-export", "ps-verify", "ps-archive"]),
+    new Set([
+      "projectspec-workflows",
+      "ps-intake",
+      "ps-design",
+      "ps-plan",
+      "ps-export",
+      "ps-verify",
+      "ps-archive",
+      "ps-intake-wizard",
+    ]),
   );
 }
 

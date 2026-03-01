@@ -39,16 +39,18 @@ projectspec/sources/imported/confluence/<timestamp>/confluence.json
 CONFLUENCE_API_URL=https://your-domain.atlassian.net
 CONFLUENCE_USER=you@example.com
 CONFLUENCE_PAT=ATATT3xFfG...
+CONFLUENCE_OAUTH_TOKEN=eyJhbGci...
 CONFLUENCE_PAGE_IDS=123,456
 CONFLUENCE_SPACE_KEY=ABC
 ```
 
 If you pass Confluence URLs to /ps-intake, the adapter infers the base URL and `CONFLUENCE_API_URL` becomes optional.
-If `CONFLUENCE_USER` is omitted, the adapter uses Bearer auth with `CONFLUENCE_PAT`.
+If `CONFLUENCE_OAUTH_TOKEN` is set, it is used as a Bearer token. Otherwise, Bearer auth uses `CONFLUENCE_PAT` when `CONFLUENCE_USER` is omitted.
+
+Home config (stored at `~/.projectspec/config.yaml`) can also supply these values after `projectspec init`.
 
 ## Connector runner
 
 ```bash
-pnpm --filter @projectspec/cli build
 node packages/cli/dist/scripts/intake-connectors.js https://example.atlassian.net/wiki/spaces/ABC/pages/123
 ```

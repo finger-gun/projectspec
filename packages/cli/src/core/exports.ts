@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { ProjectSpecConfig } from "./config.js";
 import { parseTools, ToolId } from "./tools.js";
@@ -82,7 +83,7 @@ export function updateToolExports(
     pruneFiles(exportDir, previousManifest?.outputs.files ?? [], exportFilePaths);
 
     for (const mapping of harness) {
-      const targetDir = path.join(rootDir, mapping.targetDir);
+      const targetDir = resolveHarnessTargetDir(rootDir, mapping.targetDir);
       const targetFiles = mapping.files.map((file) => file.relativePath);
       writeExportFiles(targetDir, mapping.files.map((file) => ({
         relativePath: file.relativePath,
@@ -113,6 +114,16 @@ export function updateToolExports(
 
     writeManifest(exportDir, manifest);
   }
+}
+
+function resolveHarnessTargetDir(rootDir: string, targetDir: string): string {
+  if (targetDir.startsWith("~/")) {
+    return path.join(os.homedir(), targetDir.slice(2));
+  }
+  if (path.isAbsolute(targetDir)) {
+    return targetDir;
+  }
+  return path.join(rootDir, targetDir);
 }
 
 export function stringifyManifest(manifest: ToolExportManifest): string {
@@ -215,10 +226,8 @@ function buildKiloCodeFiles(workflows: WorkflowSpec[]): ExportFile[] {
     content: workflow.content,
   }));
 
-  files.push({
-    relativePath: "skills/projectspec-workflows/SKILL.md",
-    content: renderWorkflowSkill(workflows),
-  });
+  files.push(...buildWorkflowSkillFiles(workflows));
+  files.push(renderIntakeWizardSkill("skills/ps-intake-wizard/SKILL.md"));
 
   return files;
 }
@@ -231,11 +240,14 @@ function buildCopilotFiles(workflows: WorkflowSpec[]): ExportFile[] {
 }
 
 function buildCodexFiles(workflows: WorkflowSpec[]): ExportFile[] {
+  const prompts = workflows.map((workflow) => ({
+    relativePath: `prompts/ps-${workflow.slug}.prompt.md`,
+    content: renderCopilotPrompt(workflow),
+  }));
   return [
-    {
-      relativePath: "skills/projectspec-workflows/SKILL.md",
-      content: renderWorkflowSkill(workflows),
-    },
+    ...buildWorkflowSkillFiles(workflows),
+    renderIntakeWizardSkill("skills/ps-intake-wizard/SKILL.md"),
+    ...prompts,
   ];
 }
 
@@ -244,20 +256,43 @@ function renderCopilotPrompt(workflow: WorkflowSpec): string {
   return ["---", `description: ${description}`, "---", "", workflow.content].join("\n");
 }
 
-function renderWorkflowSkill(workflows: WorkflowSpec[]): string {
-  const sections = workflows.map((workflow) => workflow.content.trimEnd()).join("\n\n");
+function renderWorkflowSkill(workflow: WorkflowSpec): string {
+  const description = `ProjectSpecs ${workflow.id} workflow.`;
   const body = [
     "---",
-    "name: projectspec-workflows",
-    "description: Agent workflows for ProjectSpecs.",
+    `name: ps-${workflow.slug}`,
+    `description: ${description}`,
     "---",
     "",
-    "Use these workflows to guide ProjectSpecs actions and produce canonical artifacts.",
-    "",
-    sections,
+    workflow.content.trimEnd(),
     "",
   ].join("\n");
   return normalizeContent(body);
+}
+
+function buildWorkflowSkillFiles(workflows: WorkflowSpec[]): ExportFile[] {
+  return workflows.map((workflow) => ({
+    relativePath: `skills/ps-${workflow.slug}/SKILL.md`,
+    content: renderWorkflowSkill(workflow),
+  }));
+}
+
+function renderIntakeWizardSkill(relativePath: string): ExportFile {
+  const body = [
+    "---",
+    "name: ps-intake-wizard",
+    "description: Guided intake wizard for ProjectSpecs.",
+    "---",
+    "",
+    "Load wizard questions from `projectspec/workflows/intake-wizard.yaml` and ask them in order.",
+    "If inputs were provided inline, treat the first source as primary and the rest as dependencies.",
+    "If scope is still unclear, ask clarifying questions before curating requirements.",
+    "",
+  ].join("\n");
+  return {
+    relativePath,
+    content: normalizeContent(body),
+  };
 }
 
 function writeExportFiles(baseDir: string, files: ExportFile[]): void {

@@ -7,6 +7,8 @@ import {
   recordImportActivity,
   updateImportRegistry,
 } from "../imports.js";
+import { getProjectId } from "../config.js";
+import { getProjectConnectorConfig } from "../home-config.js";
 
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -14,6 +16,7 @@ export interface ConfluenceImportOptions {
   instanceUrl?: string;
   userEmail?: string;
   pat?: string;
+  oauthToken?: string;
   spaceKey?: string;
   pageIds?: string[];
   urls?: string[];
@@ -47,7 +50,7 @@ export async function runConfluenceImport(
   const timestamp = new Date().toISOString();
   const snapshotDir = createSnapshotDirectory("confluence", timestamp, rootDir);
   const snapshotPath = path.join(snapshotDir, "confluence.json");
-  const resolved = resolveConfluenceOptions(options);
+  const resolved = resolveConfluenceOptions(options, rootDir);
   const pages = await fetchConfluencePages(resolved);
   const metadata = buildConfluenceMetadata(resolved);
   const payload: ConfluenceSnapshotPayload = {
@@ -79,34 +82,102 @@ interface ResolvedConfluenceOptions {
   instanceUrl: string;
   userEmail: string;
   pat: string;
+  oauthToken?: string;
   spaceKey?: string;
   pageIds: string[];
   fetchFn: Fetcher;
 }
 
-function resolveConfluenceOptions(options: ConfluenceImportOptions): ResolvedConfluenceOptions {
+function resolveConfluenceOptions(
+  options: ConfluenceImportOptions,
+  rootDir: string,
+): ResolvedConfluenceOptions {
+  const projectId = getProjectId(rootDir);
+  const stored = projectId ? getProjectConnectorConfig(projectId, "confluence") : null;
   const inferredInstance = inferInstanceUrl(options.urls);
-  const instanceUrl = options.instanceUrl ?? process.env.CONFLUENCE_API_URL ?? inferredInstance ?? "";
-  const userEmail = options.userEmail ?? process.env.CONFLUENCE_USER ?? "";
-  const pat = options.pat ?? process.env.CONFLUENCE_PAT ?? process.env.JIRA_PAT ?? "";
-  const spaceKey = options.spaceKey ?? process.env.CONFLUENCE_SPACE_KEY;
+  const instanceUrl =
+    options.instanceUrl ??
+    process.env.CONFLUENCE_API_URL ??
+    stored?.CONFLUENCE_API_URL ??
+    inferredInstance ??
+    "";
+  const userEmail =
+    options.userEmail ?? process.env.CONFLUENCE_USER ?? stored?.CONFLUENCE_USER ?? "";
+  const pat =
+    options.pat ??
+    process.env.CONFLUENCE_PAT ??
+    stored?.CONFLUENCE_PAT ??
+    process.env.JIRA_PAT ??
+    "";
+  const oauthToken =
+    options.oauthToken ?? process.env.CONFLUENCE_OAUTH_TOKEN ?? stored?.CONFLUENCE_OAUTH_TOKEN;
+  const spaceKey = options.spaceKey ?? process.env.CONFLUENCE_SPACE_KEY ?? stored?.CONFLUENCE_SPACE_KEY;
   const pageIdsFromEnv = process.env.CONFLUENCE_PAGE_IDS
     ? process.env.CONFLUENCE_PAGE_IDS.split(",").map((value) => value.trim()).filter(Boolean)
     : [];
+  const storedPageIds = stored?.CONFLUENCE_PAGE_IDS;
+  const pageIdsFromConfig = storedPageIds
+    ? String(storedPageIds).split(",").map((value) => value.trim()).filter(Boolean)
+    : [];
   const pageIds = collectPageIds(options.pageIds, options.urls, pageIdsFromEnv);
+  const pageIdsFinal = pageIds.length > 0 ? pageIds : pageIdsFromConfig;
   const fetchFn = options.fetchFn ?? fetch;
-  if (!instanceUrl || !pat) {
+  if (isConnectorDebugEnabled()) {
+    console.log("[confluence] resolved config", {
+      instanceUrl,
+      instanceUrlSource: resolveValueSource(
+        options.instanceUrl,
+        process.env.CONFLUENCE_API_URL,
+        stored?.CONFLUENCE_API_URL,
+        inferredInstance,
+      ),
+      userEmailPresent: Boolean(userEmail),
+      userEmailSource: resolveValueSource(
+        options.userEmail,
+        process.env.CONFLUENCE_USER,
+        stored?.CONFLUENCE_USER,
+      ),
+      patPresent: Boolean(pat),
+      patSource: resolveValueSource(
+        options.pat,
+        process.env.CONFLUENCE_PAT,
+        stored?.CONFLUENCE_PAT,
+        process.env.JIRA_PAT,
+      ),
+      oauthTokenPresent: Boolean(oauthToken),
+      oauthTokenSource: resolveValueSource(
+        options.oauthToken,
+        process.env.CONFLUENCE_OAUTH_TOKEN,
+        stored?.CONFLUENCE_OAUTH_TOKEN,
+      ),
+      spaceKeyPresent: Boolean(spaceKey),
+      spaceKeySource: resolveValueSource(
+        options.spaceKey,
+        process.env.CONFLUENCE_SPACE_KEY,
+        stored?.CONFLUENCE_SPACE_KEY,
+      ),
+      pageIds: pageIdsFinal,
+      pageIdsSource: resolvePageIdsSource(
+        options.pageIds,
+        options.urls,
+        pageIdsFromEnv,
+        pageIdsFromConfig,
+      ),
+    });
+  }
+  if (!instanceUrl || (!oauthToken && !pat)) {
     throw new Error("Confluence import requires instanceUrl and PAT.");
   }
-  if (pageIds.length === 0) {
+  if (pageIdsFinal.length === 0) {
     throw new Error("Confluence import requires at least one page id or URL.");
   }
   return {
     instanceUrl,
     userEmail,
     pat,
+    oauthToken,
     spaceKey,
-    pageIds,
+    pageIds: pageIdsFinal,
     fetchFn,
   };
 }
@@ -120,7 +191,7 @@ async function fetchConfluencePages(
     url.searchParams.set("expand", "body.storage,version,space");
   const response = await options.fetchFn(url.toString(), {
     headers: {
-      Authorization: buildConfluenceAuth(options.userEmail, options.pat),
+      Authorization: buildConfluenceAuth(options.userEmail, options.pat, options.oauthToken),
       Accept: "application/json",
     },
   });
@@ -204,7 +275,57 @@ function inferInstanceUrl(urls?: string[]): string | null {
   return null;
 }
 
-function buildConfluenceAuth(userEmail: string, pat: string): string {
+function resolvePageIdsSource(
+  pageIds?: string[],
+  urls?: string[],
+  pageIdsFromEnv: string[] = [],
+  pageIdsFromConfig: string[] = [],
+): string {
+  if (pageIds && pageIds.length > 0) {
+    return "options.pageIds";
+  }
+  if (urls && urls.length > 0) {
+    return "options.urls";
+  }
+  if (pageIdsFromEnv.length > 0) {
+    return "env.CONFLUENCE_PAGE_IDS";
+  }
+  if (pageIdsFromConfig.length > 0) {
+    return "homeConfig.CONFLUENCE_PAGE_IDS";
+  }
+  return "missing";
+}
+
+function resolveValueSource(
+  optionsValue?: string | null,
+  envValue?: string | null,
+  storedValue?: string | null,
+  fallbackValue?: string | null,
+): string {
+  if (optionsValue) {
+    return "options";
+  }
+  if (envValue) {
+    return "env";
+  }
+  if (storedValue) {
+    return "homeConfig";
+  }
+  if (fallbackValue) {
+    return "fallback";
+  }
+  return "missing";
+}
+
+function isConnectorDebugEnabled(): boolean {
+  const raw = process.env.CONNECTOR_DEBUG ?? "";
+  return ["1", "true", "yes", "on"].includes(raw.toLowerCase());
+}
+
+function buildConfluenceAuth(userEmail: string, pat: string, oauthToken?: string): string {
+  if (oauthToken) {
+    return `Bearer ${oauthToken}`;
+  }
   if (userEmail) {
     const token = Buffer.from(`${userEmail}:${pat}`).toString("base64");
     return `Basic ${token}`;

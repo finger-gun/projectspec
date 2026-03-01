@@ -84,4 +84,42 @@ describe("confluence adapter", () => {
 
     fs.rmSync(rootDir, { recursive: true, force: true });
   });
+
+  it("uses home config when env is missing", async () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "projectspec-confluence-"));
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "projectspec-home-"));
+    fs.mkdirSync(path.join(rootDir, "projectspec"), { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDir, "projectspec", "config.yaml"),
+      "projectId: test-project\nprofile: core\nworkflows: []\ntools: []\nintegrations:\n  writeBackEnabled: false\n",
+      "utf8",
+    );
+    fs.mkdirSync(path.join(homeDir, ".projectspec"), { recursive: true });
+    fs.writeFileSync(
+      path.join(homeDir, ".projectspec", "config.yaml"),
+      "version: 1\nprojects:\n  test-project:\n    connectors:\n      confluence:\n        CONFLUENCE_API_URL: https://confluence.example.com\n        CONFLUENCE_OAUTH_TOKEN: token\n        CONFLUENCE_PAGE_IDS: 321\n",
+      "utf8",
+    );
+
+    const fetchFn = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          id: "321",
+          title: "Page B",
+          body: { storage: { value: "<p>Body</p>" } },
+          version: { when: "2024-01-02" },
+          _links: { webui: "/wiki/spaces/ABC/pages/321" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const originalHome = process.env.PROJECTSPEC_HOME;
+    process.env.PROJECTSPEC_HOME = homeDir;
+    const result = await runConfluenceImport({ fetchFn }, rootDir);
+    expect(result.snapshotPath).toContain("confluence");
+    process.env.PROJECTSPEC_HOME = originalHome;
+    fs.rmSync(rootDir, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
 });

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import YAML from "yaml";
@@ -6,6 +7,7 @@ export interface ProjectSpecConfig {
   profile: string;
   workflows: string[];
   tools: string[];
+  projectId?: string;
   integrations: {
     writeBackEnabled: boolean;
   };
@@ -36,11 +38,19 @@ export function readConfig(rootDir: string = process.cwd()): ProjectSpecConfig {
     profile: data.profile ?? DEFAULT_CONFIG.profile,
     workflows: data.workflows ?? DEFAULT_CONFIG.workflows,
     tools: data.tools ?? DEFAULT_CONFIG.tools,
+    projectId: data.projectId,
     integrations: {
       writeBackEnabled:
         data.integrations?.writeBackEnabled ?? DEFAULT_CONFIG.integrations.writeBackEnabled,
     },
   };
+}
+
+export function writeConfig(config: ProjectSpecConfig, rootDir: string = process.cwd()): void {
+  const configPath = path.join(rootDir, "projectspec", "config.yaml");
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  const yaml = YAML.stringify(config);
+  fs.writeFileSync(configPath, yaml, "utf8");
 }
 
 export function writeDefaultConfig(rootDir: string = process.cwd()): void {
@@ -52,4 +62,19 @@ export function writeDefaultConfig(rootDir: string = process.cwd()): void {
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   const yaml = YAML.stringify(DEFAULT_CONFIG);
   fs.writeFileSync(configPath, yaml, "utf8");
+}
+
+export function ensureProjectId(rootDir: string = process.cwd()): string {
+  const config = readConfig(rootDir);
+  if (config.projectId) {
+    return config.projectId;
+  }
+  const projectId = crypto.randomUUID();
+  writeConfig({ ...config, projectId }, rootDir);
+  return projectId;
+}
+
+export function getProjectId(rootDir: string = process.cwd()): string | null {
+  const config = readConfig(rootDir);
+  return config.projectId ?? null;
 }

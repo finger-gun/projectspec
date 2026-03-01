@@ -9,7 +9,6 @@ Connector-driven intake accepts Jira issue keys, Confluence URLs, and local file
 ## Example usage
 
 ```bash
-pnpm --filter @projectspec/cli build
 node packages/cli/dist/scripts/intake-connectors.js ROSSCRISP-2712 https://example.atlassian.net/wiki/spaces/ABC/pages/123 ./notes.md
 ```
 

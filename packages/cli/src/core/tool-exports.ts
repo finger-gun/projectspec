@@ -48,6 +48,14 @@ const TOOL_EXPORT_DEFINITIONS: ToolExportDefinition[] = [
         exportSubdir: "skills",
         targetDir: ".codex/skills",
       },
+      {
+        exportSubdir: "prompts",
+        targetDir: ".codex/prompts",
+      },
+      {
+        exportSubdir: "prompts",
+        targetDir: "~/.codex/prompts",
+      },
     ],
   },
 ];

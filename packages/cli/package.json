@@ -11,7 +11,7 @@
     "projectspec": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "vitest run",
     "coverage": "vitest run --coverage"

@@ -7,6 +7,8 @@ import {
   recordImportActivity,
   updateImportRegistry,
 } from "../imports.js";
+import { getProjectId } from "../config.js";
+import { getProjectConnectorConfig } from "../home-config.js";
 
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -18,6 +20,7 @@ export interface JiraImportOptions {
   payload?: JiraSnapshotPayload;
   userEmail?: string;
   pat?: string;
+  oauthToken?: string;
   issueKeys?: string[];
   fetchFn?: Fetcher;
 }
@@ -54,7 +57,7 @@ export async function runJiraImport(
   const timestamp = new Date().toISOString();
   const snapshotDir = createSnapshotDirectory("jira", timestamp, rootDir);
   const snapshotPath = path.join(snapshotDir, "jira.json");
-  const resolved = resolveJiraOptions(options);
+  const resolved = resolveJiraOptions(options, rootDir);
   const payload = await resolvePayload(resolved);
   const metadata = buildJiraMetadata(resolved);
   const snapshot: JiraSnapshotPayload = {
@@ -89,30 +92,52 @@ interface ResolvedJiraOptions {
   query: string;
   userEmail: string;
   pat: string;
+  oauthToken?: string;
   issueKeys: string[];
   payloadPath?: string;
   payload?: JiraSnapshotPayload;
   fetchFn: Fetcher;
 }
 
-function resolveJiraOptions(options: JiraImportOptions): ResolvedJiraOptions {
+function resolveJiraOptions(
+  options: JiraImportOptions,
+  rootDir: string,
+): ResolvedJiraOptions {
+  const projectId = getProjectId(rootDir);
+  const stored = projectId ? getProjectConnectorConfig(projectId, "jira") : null;
   const instanceUrl = options.instanceUrl ?? process.env.JIRA_API_URL ?? "";
   const issueKeys = options.issueKeys ?? [];
   const inferredProjectKey = issueKeys[0]?.split("-")[0];
-  const projectKey = options.projectKey ?? process.env.JIRA_PROJECT_KEY ?? inferredProjectKey ?? "";
-  const query = options.query ?? process.env.JIRA_QUERY ?? buildDefaultQuery(projectKey, issueKeys);
-  const userEmail = options.userEmail ?? process.env.JIRA_USER ?? "";
-  const pat = options.pat ?? process.env.JIRA_PAT ?? "";
+  const projectKey =
+    options.projectKey ??
+    process.env.JIRA_PROJECT_KEY ??
+    stored?.JIRA_PROJECT_KEY ??
+    inferredProjectKey ??
+    "";
+  const query =
+    options.query ??
+    process.env.JIRA_QUERY ??
+    stored?.JIRA_QUERY ??
+    buildDefaultQuery(projectKey, issueKeys);
+  const userEmail = options.userEmail ?? process.env.JIRA_USER ?? stored?.JIRA_USER ?? "";
+  const pat = options.pat ?? process.env.JIRA_PAT ?? stored?.JIRA_PAT ?? "";
+  const oauthToken =
+    options.oauthToken ?? process.env.JIRA_OAUTH_TOKEN ?? stored?.JIRA_OAUTH_TOKEN;
+  const resolvedInstance =
+    instanceUrl || stored?.JIRA_API_URL ? instanceUrl || stored?.JIRA_API_URL || "" : "";
+  const resolvedUser = userEmail;
+  const resolvedPat = pat;
   const fetchFn = options.fetchFn ?? fetch;
-  if (!instanceUrl || !projectKey || !userEmail || !pat) {
+  if (!resolvedInstance || !projectKey || (!oauthToken && (!resolvedUser || !resolvedPat))) {
     throw new Error("Jira import requires instanceUrl, projectKey, userEmail, and PAT.");
   }
   return {
-    instanceUrl,
+    instanceUrl: resolvedInstance,
     projectKey,
     query,
-    userEmail,
-    pat,
+    userEmail: resolvedUser,
+    pat: resolvedPat,
+    oauthToken,
     issueKeys,
     payloadPath: options.payloadPath,
     payload: options.payload,
@@ -147,14 +172,14 @@ async function fetchJiraSnapshot(options: ResolvedJiraOptions): Promise<JiraSnap
   let total = Infinity;
 
   while (startAt < total) {
-    const url = new URL("/rest/api/3/search", options.instanceUrl);
+    const url = new URL("/rest/api/3/search/jql", options.instanceUrl);
     url.searchParams.set("jql", options.query);
     url.searchParams.set("startAt", String(startAt));
     url.searchParams.set("maxResults", String(maxResults));
     url.searchParams.set("fields", fields.join(","));
     const response = await options.fetchFn(url.toString(), {
       headers: {
-        Authorization: buildBasicAuth(options.userEmail, options.pat),
+        Authorization: buildJiraAuth(options.userEmail, options.pat, options.oauthToken),
         Accept: "application/json",
       },
     });
@@ -198,7 +223,10 @@ function buildDefaultQuery(projectKey: string, issueKeys: string[]): string {
   return `project = ${projectKey} AND issuetype in (Epic, Story)`;
 }
 
-function buildBasicAuth(userEmail: string, pat: string): string {
+function buildJiraAuth(userEmail: string, pat: string, oauthToken?: string): string {
+  if (oauthToken) {
+    return `Bearer ${oauthToken}`;
+  }
   const token = Buffer.from(`${userEmail}:${pat}`).toString("base64");
   return `Basic ${token}`;
 }

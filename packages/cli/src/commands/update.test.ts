@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../core/config.js", () => ({
   readConfig: vi.fn(),
+  ensureProjectId: vi.fn(),
 }));
 vi.mock("../core/workflows.js", () => ({
   updateWorkflows: vi.fn(),

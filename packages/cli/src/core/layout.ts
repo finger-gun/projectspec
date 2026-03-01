@@ -6,6 +6,7 @@ const REQUIRED_DIRECTORIES = [
   "projectspec/sources",
   "projectspec/sources/intake",
   "projectspec/sources/imported",
+  "projectspec/workflows",
   "projectspec/specs",
   "projectspec/specs/domains",
   "projectspec/specs/architecture",

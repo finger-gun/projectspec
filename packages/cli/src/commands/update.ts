@@ -1,4 +1,4 @@
-import { readConfig } from "../core/config.js";
+import { ensureProjectId, readConfig } from "../core/config.js";
 import { updateToolExports } from "../core/exports.js";
 import { installTools, parseTools } from "../core/tools.js";
 import { ensureProjectLayout } from "../core/layout.js";
@@ -11,6 +11,7 @@ interface UpdateOptions {
 export function updateProject(options: UpdateOptions = {}): void {
   const config = readConfig();
   ensureProjectLayout();
+  ensureProjectId();
   updateWorkflows(config);
   const parsedTools = parseTools(config.tools);
   installTools(parsedTools);

@@ -3,7 +3,12 @@ import path from "path";
 import { runIntakeConnectors } from "../core/intake/connectors.js";
 
 async function main(): Promise<void> {
-  loadEnv();
+  const envPath = loadEnv();
+  if (envPath) {
+    process.stdout.write(`Loaded .env from ${envPath}\n`);
+  } else {
+    process.stdout.write("No .env found in current directory. Using existing environment and home config.\n");
+  }
   const inputs = process.argv.slice(2);
   if (inputs.length === 0) {
     process.stderr.write("No intake inputs provided.\n");
@@ -19,10 +24,10 @@ async function main(): Promise<void> {
   }
 }
 
-function loadEnv(): void {
+function loadEnv(): string | null {
   const envPath = path.resolve(process.cwd(), ".env");
   if (!fs.existsSync(envPath)) {
-    return;
+    return null;
   }
   const raw = fs.readFileSync(envPath, "utf8");
   for (const line of raw.split(/\r?\n/)) {
@@ -40,6 +45,7 @@ function loadEnv(): void {
       process.env[key] = value;
     }
   }
+  return envPath;
 }
 
 main().catch((error) => {
