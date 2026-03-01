@@ -39,6 +39,7 @@ describe("uninstall", () => {
     writeFile(path.join(rootDir, ".kilocode", "workflows", "keep.md"));
     writeFile(path.join(rootDir, ".kilocode", "skills", "projectspec-workflows", "SKILL.md"));
     writeFile(path.join(rootDir, ".kilocode", "skills", "ps-intake-wizard", "SKILL.md"));
+    writeFile(path.join(rootDir, ".kilocode", "skills", "ps-archive", "SKILL.md"));
     writeFile(path.join(rootDir, ".kilocode", "skills", "keep-skill", "SKILL.md"));
 
     removeProjectspecAgentAssets({ rootDir, homeDir });
@@ -68,6 +69,7 @@ describe("uninstall", () => {
     expect(fs.existsSync(path.join(rootDir, ".kilocode", "workflows", "keep.md"))).toBe(true);
     expect(fs.existsSync(path.join(rootDir, ".kilocode", "skills", "projectspec-workflows"))).toBe(false);
     expect(fs.existsSync(path.join(rootDir, ".kilocode", "skills", "ps-intake-wizard"))).toBe(false);
+    expect(fs.existsSync(path.join(rootDir, ".kilocode", "skills", "ps-archive"))).toBe(false);
     expect(fs.existsSync(path.join(rootDir, ".kilocode", "skills", "keep-skill"))).toBe(true);
 
     fs.rmSync(rootDir, { recursive: true, force: true });

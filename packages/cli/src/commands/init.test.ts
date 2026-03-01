@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../core/layout.js", () => ({
@@ -101,6 +103,8 @@ describe("init", () => {
     (resolveConnectorValuesFromEnv as ReturnType<typeof vi.fn>).mockReturnValue({
       jira: { JIRA_API_URL: "https://jira.example.com" },
     });
+    const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    const readSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("JIRA_API_URL=https://jira.example.com");
 
     const outputSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
@@ -113,8 +117,13 @@ describe("init", () => {
       jira: { JIRA_API_URL: "https://jira.example.com" },
     });
     expect(outputSpy).toHaveBeenCalledWith(
+      "Loaded .env from " + path.resolve(process.cwd(), ".env") + "\n",
+    );
+    expect(outputSpy).toHaveBeenCalledWith(
       "Non-interactive init used env values for connectors: jira: JIRA_API_URL\n",
     );
+    existsSpy.mockRestore();
+    readSpy.mockRestore();
     outputSpy.mockRestore();
   });
 });

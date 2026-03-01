@@ -62,10 +62,13 @@ export function removeProjectspecAgentAssets(options: {
 function removeProjectspecKiloCodeAssets(rootDir: string): void {
   const workflowsDir = path.join(rootDir, ".kilocode", "workflows");
   removeMatchingFiles(workflowsDir, (name) => name.startsWith("ps-") && name.endsWith(".md"));
-  const skillDir = path.join(rootDir, ".kilocode", "skills", "projectspec-workflows");
-  removePathIfExists(skillDir);
-  const intakeWizardSkillDir = path.join(rootDir, ".kilocode", "skills", "ps-intake-wizard");
-  removePathIfExists(intakeWizardSkillDir);
+  const skillsDir = path.join(rootDir, ".kilocode", "skills");
+  removeMatchingDirectories(
+    skillsDir,
+    new Set(["ps-intake", "ps-design", "ps-plan", "ps-export", "ps-verify", "ps-archive", "ps-intake-wizard"]),
+  );
+  const workflowSkillDir = path.join(rootDir, ".kilocode", "skills", "projectspec-workflows");
+  removePathIfExists(workflowSkillDir);
 }
 
 function removeProjectspecCopilotAssets(rootDir: string): void {

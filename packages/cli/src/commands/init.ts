@@ -13,6 +13,8 @@ import { installTools, parseTools, persistToolsConfig, promptForTools } from "..
 import { renderLogo } from "../core/ui.js";
 import chalk from "chalk";
 import gradient from "gradient-string";
+import fs from "fs";
+import path from "path";
 
 export interface InitOptions {
   tools?: string[];
@@ -47,11 +49,17 @@ export async function initProject(options: InitOptions = {}): Promise<void> {
     options.connectors && options.connectors.length > 0 ? options.connectors : await promptForConnectors();
   if (connectors.length > 0) {
     try {
+      const envPath = options.connectors ? loadEnvFromCwd() : null;
       const values = options.connectors
         ? resolveConnectorValuesFromEnv(connectors)
         : await resolveConnectorValues(connectors);
       setProjectConnectors(projectId, values);
       if (options.connectors) {
+        if (envPath) {
+          process.stdout.write(`Loaded .env from ${envPath}\n`);
+        } else {
+          process.stdout.write("No .env found in current directory. Using existing environment.\n");
+        }
         const configured = connectors
           .map((connectorId) => {
             const keys = Object.keys(values[connectorId] ?? {});
@@ -69,4 +77,28 @@ export async function initProject(options: InitOptions = {}): Promise<void> {
   }
   writeConfig(config);
   process.stdout.write("Initialized ProjectSpecs workspace.\n");
+}
+
+function loadEnvFromCwd(): string | null {
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (!fs.existsSync(envPath)) {
+    return null;
+  }
+  const raw = fs.readFileSync(envPath, "utf8");
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+    const index = trimmed.indexOf("=");
+    if (index <= 0) {
+      continue;
+    }
+    const key = trimmed.slice(0, index).trim();
+    const value = trimmed.slice(index + 1).trim();
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+  return envPath;
 }
