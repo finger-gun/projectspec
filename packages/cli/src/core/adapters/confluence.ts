@@ -29,6 +29,16 @@ export interface ConfluenceSnapshotPage {
   url: string;
   body?: string;
   updated?: string;
+  attachments?: ConfluenceAttachment[];
+}
+
+export interface ConfluenceAttachment {
+  id: string;
+  title: string;
+  mediaType?: string;
+  size?: number;
+  downloadUrl?: string;
+  snapshotPath?: string;
 }
 
 export interface ConfluenceSnapshotPayload {
@@ -51,8 +61,8 @@ export async function runConfluenceImport(
   const snapshotDir = createSnapshotDirectory("confluence", timestamp, rootDir);
   const snapshotPath = path.join(snapshotDir, "confluence.json");
   const resolved = resolveConfluenceOptions(options, rootDir);
-  const pages = await fetchConfluencePages(resolved);
-  const metadata = buildConfluenceMetadata(resolved);
+  const { pages, linkedPageIds } = await fetchConfluencePages(resolved, snapshotDir);
+  const metadata = buildConfluenceMetadata(resolved, linkedPageIds);
   const payload: ConfluenceSnapshotPayload = {
     pages,
     metadata,
@@ -86,6 +96,11 @@ interface ResolvedConfluenceOptions {
   spaceKey?: string;
   pageIds: string[];
   fetchFn: Fetcher;
+}
+
+interface ConfluencePageFetchResult {
+  page: ConfluenceSnapshotPage;
+  linkedPageIds: string[];
 }
 
 function resolveConfluenceOptions(
@@ -184,39 +199,188 @@ function resolveConfluenceOptions(
 
 async function fetchConfluencePages(
   options: ResolvedConfluenceOptions,
-): Promise<ConfluenceSnapshotPage[]> {
+  snapshotDir: string,
+): Promise<{ pages: ConfluenceSnapshotPage[]; linkedPageIds: string[] }> {
   const pages: ConfluenceSnapshotPage[] = [];
+  const fetched = new Set<string>();
+  const discovered = new Set<string>();
+  const attachmentsRoot = path.join(snapshotDir, "attachments");
   for (const pageId of options.pageIds) {
-    const url = new URL(`/wiki/rest/api/content/${pageId}`, options.instanceUrl);
-    url.searchParams.set("expand", "body.storage,version,space");
+    const result = await fetchConfluencePage(options, pageId, attachmentsRoot, true);
+    if (result) {
+      pages.push(result.page);
+      fetched.add(pageId);
+      for (const linkedId of result.linkedPageIds) {
+        if (linkedId && !fetched.has(linkedId)) {
+          discovered.add(linkedId);
+        }
+      }
+    }
+  }
+  const linkedPageIds = Array.from(discovered).filter((id) => !fetched.has(id));
+  const maxLinked = 10;
+  const limited = linkedPageIds.slice(0, maxLinked);
+  for (const pageId of limited) {
+    const result = await fetchConfluencePage(options, pageId, attachmentsRoot, false, true);
+    if (result) {
+      pages.push(result.page);
+    }
+  }
+  return { pages, linkedPageIds: limited };
+}
+
+async function fetchConfluencePage(
+  options: ResolvedConfluenceOptions,
+  pageId: string,
+  attachmentsRoot: string,
+  collectLinks: boolean,
+  allowMissing: boolean = false,
+): Promise<ConfluencePageFetchResult | null> {
+  const url = new URL(`/wiki/rest/api/content/${pageId}`, options.instanceUrl);
+  url.searchParams.set("expand", "body.storage,version,space");
   const response = await options.fetchFn(url.toString(), {
     headers: {
       Authorization: buildConfluenceAuth(options.userEmail, options.pat, options.oauthToken),
       Accept: "application/json",
     },
   });
-    if (!response.ok) {
-      throw new Error(`Confluence import failed: ${response.status} ${response.statusText}`);
+  if (!response.ok) {
+    if (allowMissing && response.status === 404) {
+      return null;
     }
-    const data = (await response.json()) as ConfluencePageResponse;
-    pages.push({
+    throw new Error(`Confluence import failed: ${response.status} ${response.statusText}`);
+  }
+  const data = (await response.json()) as ConfluencePageResponse;
+  const attachments = await fetchConfluenceAttachments(options, pageId, attachmentsRoot);
+  const body = data.body?.storage?.value;
+  const linkedPageIds = collectLinks && body ? extractLinkedPageIds(body) : [];
+  return {
+    page: {
       id: data.id,
       title: data.title ?? "",
       url: buildConfluencePageUrl(options.instanceUrl, data),
-      body: data.body?.storage?.value,
+      body,
       updated: data.version?.when,
-    });
-  }
-  return pages;
+      attachments,
+    },
+    linkedPageIds,
+  };
 }
 
-function buildConfluenceMetadata(options: ResolvedConfluenceOptions): Record<string, string> {
+async function fetchConfluenceAttachments(
+  options: ResolvedConfluenceOptions,
+  pageId: string,
+  attachmentsRoot: string,
+): Promise<ConfluenceAttachment[]> {
+  const url = new URL(`/wiki/rest/api/content/${pageId}/child/attachment`, options.instanceUrl);
+  url.searchParams.set("limit", "200");
+  const response = await options.fetchFn(url.toString(), {
+    headers: {
+      Authorization: buildConfluenceAuth(options.userEmail, options.pat, options.oauthToken),
+      Accept: "application/json",
+    },
+  });
+  if (!response.ok) {
+    return [];
+  }
+  const data = (await response.json()) as ConfluenceAttachmentResponse;
+  if (!data.results || data.results.length === 0) {
+    return [];
+  }
+  const pageDir = path.join(attachmentsRoot, pageId);
+  fs.mkdirSync(pageDir, { recursive: true });
+  const attachments: ConfluenceAttachment[] = [];
+  for (const item of data.results) {
+    const downloadUrl = item._links?.download
+      ? new URL(item._links.download, options.instanceUrl).toString()
+      : undefined;
+    let snapshotPath: string | undefined;
+    if (downloadUrl) {
+      snapshotPath = await attemptAttachmentDownload(
+        downloadUrl,
+        item.title ?? item.id ?? "attachment",
+        pageDir,
+        options,
+      );
+    }
+    attachments.push({
+      id: item.id ?? "",
+      title: item.title ?? "",
+      mediaType: item.mediaType,
+      size: item.extensions?.fileSize,
+      downloadUrl,
+      snapshotPath,
+    });
+  }
+  return attachments;
+}
+
+async function attemptAttachmentDownload(
+  downloadUrl: string,
+  title: string,
+  pageDir: string,
+  options: ResolvedConfluenceOptions,
+): Promise<string | undefined> {
+  const fileName = sanitizeFilename(title);
+  const primary = await fetchAttachmentBinary(downloadUrl, options);
+  if (primary) {
+    const snapshotPath = path.join(pageDir, fileName);
+    fs.writeFileSync(snapshotPath, primary);
+    return snapshotPath;
+  }
+  const fileNameEncoded = encodeURIComponent(title);
+  const fallbackUrl = new URL(
+    `/wiki/download/attachments/${path.basename(pageDir)}/${fileNameEncoded}`,
+    options.instanceUrl,
+  ).toString();
+  const fallback = await fetchAttachmentBinary(fallbackUrl, options);
+  if (fallback) {
+    const snapshotPath = path.join(pageDir, fileName);
+    fs.writeFileSync(snapshotPath, fallback);
+    return snapshotPath;
+  }
+  return undefined;
+}
+
+async function fetchAttachmentBinary(
+  url: string,
+  options: ResolvedConfluenceOptions,
+): Promise<Buffer | undefined> {
+  try {
+    const response = await options.fetchFn(url, {
+      headers: {
+        Authorization: buildConfluenceAuth(options.userEmail, options.pat, options.oauthToken),
+        Accept: "application/octet-stream",
+      },
+    });
+    if (!response.ok) {
+      return undefined;
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return buffer.length > 0 ? buffer : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function sanitizeFilename(value: string): string {
+  const trimmed = value.trim() || "attachment";
+  return trimmed.replace(/[\\/\0]/g, "-");
+}
+
+function buildConfluenceMetadata(
+  options: ResolvedConfluenceOptions,
+  linkedPageIds: string[],
+): Record<string, string> {
   const metadata: Record<string, string> = {
     confluenceInstanceUrl: options.instanceUrl,
     confluencePageIds: options.pageIds.join(","),
   };
   if (options.spaceKey) {
     metadata.confluenceSpaceKey = options.spaceKey;
+  }
+  if (linkedPageIds.length > 0) {
+    metadata.confluenceLinkedPageIds = linkedPageIds.join(",");
   }
   return metadata;
 }
@@ -258,6 +422,20 @@ function extractPageId(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+function extractLinkedPageIds(html: string): string[] {
+  const ids = new Set<string>();
+  const pageIdRegex = /pageId=(\d+)/g;
+  const pathRegex = /\/pages\/(\d+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = pageIdRegex.exec(html))) {
+    ids.add(match[1]);
+  }
+  while ((match = pathRegex.exec(html))) {
+    ids.add(match[1]);
+  }
+  return Array.from(ids);
 }
 
 function inferInstanceUrl(urls?: string[]): string | null {
@@ -340,6 +518,16 @@ interface ConfluencePageResponse {
   version?: { when?: string };
   space?: { key?: string };
   _links?: { webui?: string };
+}
+
+interface ConfluenceAttachmentResponse {
+  results?: Array<{
+    id?: string;
+    title?: string;
+    mediaType?: string;
+    extensions?: { fileSize?: number };
+    _links?: { download?: string };
+  }>;
 }
 
 function buildConfluencePageUrl(instanceUrl: string, page: ConfluencePageResponse): string {

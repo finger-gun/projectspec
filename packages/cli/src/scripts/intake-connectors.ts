@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { runIntakeConnectors } from "../core/intake/connectors.js";
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   const envPath = loadEnv();
   if (envPath) {
     process.stdout.write(`Loaded .env from ${envPath}\n`);
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   }
 }
 
-function loadEnv(): string | null {
+export function loadEnv(): string | null {
   const envPath = path.resolve(process.cwd(), ".env");
   if (!fs.existsSync(envPath)) {
     return null;
@@ -41,14 +41,14 @@ function loadEnv(): string | null {
     }
     const key = trimmed.slice(0, index).trim();
     const value = trimmed.slice(index + 1).trim();
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
+    process.env[key] = value;
   }
   return envPath;
 }
 
-main().catch((error) => {
-  process.stderr.write(`Intake connector failed: ${error instanceof Error ? error.message : String(error)}\n`);
-  process.exitCode = 1;
-});
+if (process.argv[1]?.includes("intake-connectors")) {
+  main().catch((error) => {
+    process.stderr.write(`Intake connector failed: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  });
+}
