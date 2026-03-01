@@ -24,8 +24,8 @@ export async function main(): Promise<void> {
   }
 }
 
-export function loadEnv(): string | null {
-  const envPath = path.resolve(process.cwd(), ".env");
+export function loadEnv(rootDir: string = process.cwd()): string | null {
+  const envPath = path.resolve(rootDir, ".env");
   if (!fs.existsSync(envPath)) {
     return null;
   }
